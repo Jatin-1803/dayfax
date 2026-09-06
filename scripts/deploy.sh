@@ -72,6 +72,14 @@ else
   exit 1
 fi
 
+echo "==> Sync nginx (dayfax only — tatami untouched)"
+if [ -f "$APP_DIR/scripts/nginx-dayfax.conf" ]; then
+  sudo cp "$APP_DIR/scripts/nginx-dayfax.conf" /etc/nginx/sites-available/dayfax
+  sudo ln -sf /etc/nginx/sites-available/dayfax /etc/nginx/sites-enabled/dayfax
+  sudo nginx -t
+  sudo systemctl reload nginx
+fi
+
 echo "==> Deploy finished ($(date -u +%Y-%m-%dT%H:%M:%SZ))"
 echo "REVISION=$(git -C "$APP_DIR" rev-parse --short HEAD)"
 echo "BACKUP_BRANCH=${BACKUP_BRANCH:-unknown}"

@@ -83,18 +83,23 @@ pm2 save
 sudo env PATH="$PATH" pm2 startup systemd -u ubuntu --hp /home/ubuntu | tail -n 1 | bash || true
 
 echo "==> Nginx vhost (dayfax only — tatami untouched)"
-sudo tee /etc/nginx/sites-available/dayfax >/dev/null <<NGINX
+if [ -f "$APP_DIR/scripts/nginx-dayfax.conf" ]; then
+  # HTTP-only bootstrap if certs are not present yet
+  if [ ! -f /etc/letsencrypt/live/${DOMAIN}/fullchain.pem ]; then
+    sudo tee /etc/nginx/sites-available/dayfax >/dev/null <<NGINX
 server {
     listen 80;
     listen [::]:80;
     server_name www.${DOMAIN};
-    return 301 https://${DOMAIN}\$request_uri;
+    return 301 http://${DOMAIN}\$request_uri;
 }
 
 server {
     listen 80;
     listen [::]:80;
     server_name ${DOMAIN};
+    root ${APP_DIR}/website;
+    index index.html;
 
     add_header X-Frame-Options "SAMEORIGIN" always;
     add_header X-Content-Type-Options "nosniff" always;
@@ -124,9 +129,11 @@ server {
         proxy_set_header X-Forwarded-Proto \$scheme;
     }
 
+    location = /privacy { try_files /privacy.html =404; }
+    location = /terms { try_files /terms.html =404; }
+
     location / {
-        default_type application/json;
-        return 200 '{"success":true,"message":"Dayfax API","data":{"docs":"/api/v1/health"}}';
+        try_files \$uri \$uri/ /index.html;
     }
 
     location ~ /\.(?!well-known).* {
@@ -134,6 +141,13 @@ server {
     }
 }
 NGINX
+  else
+    sudo cp "$APP_DIR/scripts/nginx-dayfax.conf" /etc/nginx/sites-available/dayfax
+  fi
+else
+  echo "ERROR: missing $APP_DIR/scripts/nginx-dayfax.conf"
+  exit 1
+fi
 
 sudo ln -sf /etc/nginx/sites-available/dayfax /etc/nginx/sites-enabled/dayfax
 # Do NOT remove or edit tatami site
@@ -147,6 +161,12 @@ curl -sS -H "Host: tatamimat.in" -o /dev/null -w "tatami_http=%{http_code}\n" "h
 
 echo "==> SSL via Certbot (requires Cloudflare origin -> ${EC2_IP})"
 if sudo certbot --nginx -d "${DOMAIN}" -d "www.${DOMAIN}" --non-interactive --agree-tos --register-unsafely-without-email --redirect; then
+  # Re-apply checked-in SSL config with static website root
+  if [ -f "$APP_DIR/scripts/nginx-dayfax.conf" ]; then
+    sudo cp "$APP_DIR/scripts/nginx-dayfax.conf" /etc/nginx/sites-available/dayfax
+    sudo nginx -t
+    sudo systemctl reload nginx
+  fi
   echo "SSL_OK"
 else
   echo "SSL_PENDING: point ${DOMAIN} A/AAAA (Cloudflare) to ${EC2_IP}, then rerun:"
