@@ -1,0 +1,368 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>LocalDash - Home</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-tint": "#006c49",
+                    "inverse-surface": "#2b322d",
+                    "on-tertiary": "#ffffff",
+                    "secondary": "#855300",
+                    "primary-fixed-dim": "#4edea3",
+                    "on-background": "#161d19",
+                    "on-secondary-container": "#684000",
+                    "on-primary-container": "#00422b",
+                    "on-error-container": "#93000a",
+                    "on-primary-fixed": "#002113",
+                    "secondary-fixed-dim": "#ffb95f",
+                    "outline": "#6c7a71",
+                    "outline-variant": "#bbcabf",
+                    "surface-container-high": "#e3eae3",
+                    "surface-container": "#e8f0e9",
+                    "inverse-primary": "#4edea3",
+                    "primary": "#006c49",
+                    "on-tertiary-container": "#711419",
+                    "on-surface-variant": "#3c4a42",
+                    "on-secondary-fixed-variant": "#653e00",
+                    "primary-fixed": "#6ffbbe",
+                    "secondary-container": "#fea619",
+                    "surface-container-low": "#eef6ee",
+                    "tertiary-fixed": "#ffdad7",
+                    "surface-container-highest": "#dde4dd",
+                    "error-container": "#ffdad6",
+                    "on-tertiary-fixed": "#410005",
+                    "surface-container-lowest": "#ffffff",
+                    "surface": "#f4fbf4",
+                    "on-primary": "#ffffff",
+                    "secondary-fixed": "#ffddb8",
+                    "background": "#f4fbf4",
+                    "on-surface": "#161d19",
+                    "on-tertiary-fixed-variant": "#842225",
+                    "primary-container": "#10b981",
+                    "inverse-on-surface": "#ebf3eb",
+                    "on-secondary": "#ffffff",
+                    "surface-variant": "#dde4dd",
+                    "tertiary-container": "#fc7c78",
+                    "on-error": "#ffffff",
+                    "error": "#ba1a1a",
+                    "on-primary-fixed-variant": "#005236",
+                    "surface-dim": "#d4dcd5",
+                    "tertiary": "#a43a3a",
+                    "surface-bright": "#f4fbf4",
+                    "on-secondary-fixed": "#2a1700",
+                    "tertiary-fixed-dim": "#ffb3af"
+            },
+            "borderRadius": {
+                    "DEFAULT": "1rem",
+                    "lg": "2rem",
+                    "xl": "3rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "margin-desktop": "40px",
+                    "md": "16px",
+                    "margin-mobile": "20px",
+                    "xs": "4px",
+                    "unit": "8px",
+                    "sm": "8px",
+                    "lg": "24px",
+                    "xl": "32px",
+                    "gutter": "16px"
+            },
+            "fontFamily": {
+                    "body-md": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "headline-md": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "label-sm": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "label-lg": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "body-lg": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "headline-xl": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "headline-lg": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "headline-lg-mobile": [
+                            "Plus Jakarta Sans"
+                    ]
+            },
+            "fontSize": {
+                    "body-md": [
+                            "14px",
+                            {
+                                    "lineHeight": "20px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "headline-md": [
+                            "20px",
+                            {
+                                    "lineHeight": "28px",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "label-sm": [
+                            "12px",
+                            {
+                                    "lineHeight": "16px",
+                                    "letterSpacing": "0.02em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "label-lg": [
+                            "14px",
+                            {
+                                    "lineHeight": "20px",
+                                    "letterSpacing": "0.01em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "body-lg": [
+                            "16px",
+                            {
+                                    "lineHeight": "24px",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "headline-xl": [
+                            "32px",
+                            {
+                                    "lineHeight": "40px",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "800"
+                            }
+                    ],
+                    "headline-lg": [
+                            "24px",
+                            {
+                                    "lineHeight": "32px",
+                                    "letterSpacing": "-0.01em",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "headline-lg-mobile": [
+                            "22px",
+                            {
+                                    "lineHeight": "28px",
+                                    "fontWeight": "700"
+                            }
+                    ]
+            }
+    },
+        },
+      }
+    </script>
+<style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f4fbf4; /* surface */
+            color: #161d19; /* on-surface */
+        }
+        /* Custom scrollbar for horizontal scrolling sections */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-background pb-24">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-on-background shadow-sm docked full-width top-0 sticky z-50">
+<div class="flex items-center justify-between px-margin-mobile py-md w-full">
+<div class="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-primary dark:text-primary-fixed-dim" style="font-variation-settings: 'FILL' 1;">location_on</span>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant dark:text-outline-variant">Delivery Location</span>
+<div class="flex items-center">
+<span class="font-body-md text-body-md font-bold text-on-surface dark:text-on-background">Home - HSR Layout</span>
+<span class="material-symbols-outlined text-on-surface-variant dark:text-outline-variant ml-1 text-sm">expand_more</span>
+</div>
+</div>
+</div>
+<button class="hover:opacity-80 transition-opacity active:scale-95 transition-transform relative">
+<span class="material-symbols-outlined text-on-surface-variant dark:text-outline-variant">notifications</span>
+<span class="absolute top-0 right-0 w-2 h-2 bg-error rounded-full"></span>
+</button>
+</div>
+</header>
+<main class="px-margin-mobile pt-lg flex flex-col gap-lg">
+<!-- Search Bar -->
+<div class="w-full">
+<div class="flex items-center bg-surface-container-high rounded-full px-md py-3 shadow-sm hover:shadow-md transition-shadow">
+<span class="material-symbols-outlined text-on-surface-variant mr-3">search</span>
+<input class="bg-transparent border-none outline-none w-full font-body-md text-body-md text-on-surface placeholder-on-surface-variant focus:ring-0 p-0" placeholder="Search food, groceries &amp; vegetables" type="text">
+</div>
+</div>
+<!-- 3 Large Category Cards -->
+<section class="flex overflow-x-auto hide-scrollbar gap-lg py-2">
+  <!-- Food -->
+  <div class="flex flex-col items-center shrink-0 gap-xs cursor-pointer active:scale-95 transition-transform">
+    <div class="w-16 h-16 bg-secondary-container rounded-full flex items-center justify-center shadow-sm">
+      <span class="material-symbols-outlined text-on-secondary-container text-headline-md" style="font-variation-settings: 'FILL' 1;">restaurant</span>
+    </div>
+    <span class="font-label-sm text-label-sm text-on-surface text-center">Food</span>
+  </div>
+  <!-- Grocery -->
+  <div class="flex flex-col items-center shrink-0 gap-xs cursor-pointer active:scale-95 transition-transform">
+    <div class="w-16 h-16 bg-primary-container rounded-full flex items-center justify-center shadow-sm">
+      <span class="material-symbols-outlined text-on-primary-container text-headline-md" style="font-variation-settings: 'FILL' 1;">shopping_bag</span>
+    </div>
+    <span class="font-label-sm text-label-sm text-on-surface text-center">Grocery</span>
+  </div>
+  <!-- Vegetables -->
+  <div class="flex flex-col items-center shrink-0 gap-xs cursor-pointer active:scale-95 transition-transform">
+    <div class="w-16 h-16 bg-tertiary-container rounded-full flex items-center justify-center shadow-sm">
+      <span class="material-symbols-outlined text-on-tertiary-container text-headline-md" style="font-variation-settings: 'FILL' 1;">eco</span>
+    </div>
+    <span class="font-label-sm text-label-sm text-on-surface text-center">Vegetables</span>
+  </div>
+  <!-- Pharmacy (Added for density) -->
+  <div class="flex flex-col items-center shrink-0 gap-xs cursor-pointer active:scale-95 transition-transform">
+    <div class="w-16 h-16 bg-surface-container-high rounded-full flex items-center justify-center shadow-sm">
+      <span class="material-symbols-outlined text-on-surface-variant text-headline-md" style="font-variation-settings: 'FILL' 1;">medical_services</span>
+    </div>
+    <span class="font-label-sm text-label-sm text-on-surface text-center">Pharmacy</span>
+  </div>
+  <!-- Meat (Added for density) -->
+  <div class="flex flex-col items-center shrink-0 gap-xs cursor-pointer active:scale-95 transition-transform">
+    <div class="w-16 h-16 bg-surface-container-high rounded-full flex items-center justify-center shadow-sm">
+      <span class="material-symbols-outlined text-on-surface-variant text-headline-md" style="font-variation-settings: 'FILL' 1;">set_meal</span>
+    </div>
+    <span class="font-label-sm text-label-sm text-on-surface text-center">Meat</span>
+  </div>
+</section>
+<!-- Popular Near You -->
+<section class="flex flex-col gap-md">
+<h2 class="font-headline-md text-headline-md text-on-surface">Popular Near You</h2>
+<div class="flex overflow-x-auto hide-scrollbar gap-md pb-xs">
+<!-- Product Card 1 -->
+<div class="min-w-[160px] w-[160px] bg-surface-container-lowest rounded-lg p-sm shadow-sm hover:shadow-md transition-shadow flex flex-col gap-sm">
+<img class="w-full h-24 object-cover rounded-DEFAULT" data-alt="A fresh, delicious looking margherita pizza on a rustic wooden board, shot from above with soft natural lighting, set in a cozy Italian restaurant atmosphere." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBjnmPqGkeRp66KXpG3egK-Mqcz_dNkdEMKqlql0kK7r2qnkEHWjFvbxokOTlmyO7okmOmlj3PH4EIe_DBEDJ9DrSS34wZS3GMgFwC9kBkJXi4CTtq_Nnw_p8GBOal4sRA155ipmc7Hdz8HvOpUjIy8T7qcIJoAMWRLFpEcNL97dblZFaYZc7Nb_nUAni8LnpzPuiT1IHrZhuta3guIyPTW7WaQXP87iFulEaBMjVwZ9IbMzt_NRLIw">
+<div class="flex flex-col">
+<span class="font-label-lg text-label-lg text-on-surface truncate">Margherita Pizza</span>
+<span class="font-body-md text-body-md text-on-surface-variant text-sm truncate">Oven Story</span>
+</div>
+<div class="flex items-center justify-between mt-auto">
+<span class="font-body-lg text-body-lg font-bold text-primary">$12</span>
+<button class="w-8 h-8 bg-primary-container rounded-full flex items-center justify-center text-on-primary-container hover:bg-primary hover:text-on-primary transition-colors active:scale-90">
+<span class="material-symbols-outlined text-sm">add</span>
+</button>
+</div>
+</div>
+<!-- Product Card 2 -->
+<div class="min-w-[160px] w-[160px] bg-surface-container-lowest rounded-lg p-sm shadow-sm hover:shadow-md transition-shadow flex flex-col gap-sm">
+<img class="w-full h-24 object-cover rounded-DEFAULT" data-alt="A bowl of vibrant, fresh organic strawberries with water droplets, sitting on a clean white kitchen counter, bright and airy lighting, healthy lifestyle aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDoat2cmsE3XkKJIf9a4Ffx8vfipl_YuhoK4CIbVA3F5fjJEv_KGOs875ztCXjl06_wSXbRIlCrZ156GpxImCmULk8WpCWQ9v64xwOnYa2qmQabWokIxIBdBmHyl0EC8uEVZyXxNifoO93UB0doWmx0FsXtDA6HjIKRzHrwtN8pYqKlvyacxInx5EcZSFf3qo5wfRmtVeb-ZKf-3xIWQPRnQ1JI8Lu7GWV6a0HBCM2uTPh3Oga8-SKA">
+<div class="flex flex-col">
+<span class="font-label-lg text-label-lg text-on-surface truncate">Organic Strawberries</span>
+<span class="font-body-md text-body-md text-on-surface-variant text-sm truncate">Fresh Mart</span>
+</div>
+<div class="flex items-center justify-between mt-auto">
+<span class="font-body-lg text-body-lg font-bold text-primary">$5</span>
+<button class="w-8 h-8 bg-primary-container rounded-full flex items-center justify-center text-on-primary-container hover:bg-primary hover:text-on-primary transition-colors active:scale-90">
+<span class="material-symbols-outlined text-sm">add</span>
+</button>
+</div>
+</div>
+<!-- Product Card 3 -->
+<div class="min-w-[160px] w-[160px] bg-surface-container-lowest rounded-lg p-sm shadow-sm hover:shadow-md transition-shadow flex flex-col gap-sm">
+<img class="w-full h-24 object-cover rounded-DEFAULT" data-alt="A juicy double cheeseburger with lettuce and tomato on a sesame seed bun, placed on a slate plate with a side of golden fries, warm inviting lighting, high-end fast food vibe." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBqTy35bUX3Qh7YtHoZ-xIW3sqOa_cRnNeaghOmz2oaWIB4ukNJWgVf4Z_5IkpppetsoXPKeUj5PtsqvUk--wmkSj-vO6-te8Z5Kfcd4ANcgVJcHg5uLKjc0gYHrLaAjNFDyGVCPI4JqtJCvlmFG3eWLe2VCQi7qjpYj2QUM9EvK8L47AjEM13oSsCF6pkpfSUjcp9An9lFC4-GMEZw_CL-fZL25D6kBScIF6Dy7MCTqS5WF7TjuMkW">
+<div class="flex flex-col">
+<span class="font-label-lg text-label-lg text-on-surface truncate">Double Burger</span>
+<span class="font-body-md text-body-md text-on-surface-variant text-sm truncate">Burger King</span>
+</div>
+<div class="flex items-center justify-between mt-auto">
+<span class="font-body-lg text-body-lg font-bold text-primary">$8</span>
+<button class="w-8 h-8 bg-primary-container rounded-full flex items-center justify-center text-on-primary-container hover:bg-primary hover:text-on-primary transition-colors active:scale-90">
+<span class="material-symbols-outlined text-sm">add</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Recently Ordered -->
+<section class="flex flex-col gap-md">
+<h2 class="font-headline-md text-headline-md text-on-surface">Recently Ordered</h2>
+<div class="flex flex-col gap-sm">
+<!-- Small Product Card 1 -->
+<div class="bg-surface-container-lowest rounded-DEFAULT p-sm flex items-center gap-md shadow-sm hover:shadow-md transition-shadow">
+<img class="w-16 h-16 object-cover rounded-DEFAULT shrink-0" data-alt="A carton of fresh organic milk next to a glass filled with milk, set on a light wooden table against a white background, clean and minimalist morning aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCPmfqRkaXHUqGUyHInXAvf0OwYAqNLsWWrhnkzlQu3PMg9MQB6H0pJXOWq20uxWjxt5OdP7-dDXEzZc0ineb2ly56opHSp9r8Qm9Jnk7WzKDehIj0H_Cy5OaoN58eIo0AzsD5e87M4FCGPkFHNu9LUt_b7zt6frI1sVdIBcAR0JohBttBIlG8P_-mZxxgTU7AVoPMFuhTJvjJ-Sk3wKB5KvoiT_i-VGrATneeJahzMbR3QzKNj6h_W">
+<div class="flex flex-col flex-grow">
+<span class="font-label-lg text-label-lg text-on-surface">Organic Whole Milk</span>
+<span class="font-body-md text-body-md text-on-surface-variant text-xs">Delivered 2 days ago</span>
+<span class="font-body-lg text-body-lg font-bold text-primary mt-1">$4</span>
+</div>
+<button class="px-3 py-1.5 border border-primary text-primary rounded-full font-label-sm text-label-sm hover:bg-primary-container hover:border-transparent hover:text-on-primary-container transition-colors active:scale-95 shrink-0">
+                        Reorder
+                    </button>
+</div>
+<!-- Small Product Card 2 -->
+<div class="bg-surface-container-lowest rounded-DEFAULT p-sm flex items-center gap-md shadow-sm hover:shadow-md transition-shadow">
+<img class="w-16 h-16 object-cover rounded-DEFAULT shrink-0" data-alt="A loaf of freshly baked artisan sourdough bread on a cutting board with a bread knife, soft morning sunlight streaming across the kitchen counter, cozy bakery feel." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBXkBz39D4HS1n7tgdaM4GYdw5ycESo_UTc6eplmwKH3c5d7DpHNQQPfQwWcBhjX9KYyF7pLV4q8kMJH5BAESaP842fwz1hxr6CQUdmhJ5zW77nKhVpdRNLoDWkprejQylddKJ94nNZCGpNlMU5YUKfPtkT0pw0OFCXvxioX6kIBP8M2YE6vzVyBO3h8s2JFHah2qTD7rTMvkXMv7HsawoIsOnCq4IgYvW_4ONlyAuLKl4CtiJ7xjgu">
+<div class="flex flex-col flex-grow">
+<span class="font-label-lg text-label-lg text-on-surface">Sourdough Bread</span>
+<span class="font-body-md text-body-md text-on-surface-variant text-xs">Delivered 1 week ago</span>
+<span class="font-body-lg text-body-lg font-bold text-primary mt-1">$6</span>
+</div>
+<button class="px-3 py-1.5 border border-primary text-primary rounded-full font-label-sm text-label-sm hover:bg-primary-container hover:border-transparent hover:text-on-primary-container transition-colors active:scale-95 shrink-0">
+                        Reorder
+                    </button>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="bg-surface-container-lowest dark:bg-inverse-surface shadow-lg fixed bottom-0 w-full z-50 rounded-t-lg shadow-[0px_-8px_24px_rgba(0,0,0,0.04)] md:hidden">
+<div class="flex justify-around items-center h-20 px-4 pb-safe w-full">
+<!-- Home (Active) -->
+<button class="flex flex-col items-center justify-center text-primary dark:text-primary-fixed-dim font-bold hover:bg-surface-container-low dark:hover:bg-surface-container-high rounded-full active:scale-90 transition-all duration-200 p-2 w-16">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</button>
+<!-- Categories -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-low dark:hover:bg-surface-container-high rounded-full active:scale-90 transition-all duration-200 p-2 w-16">
+<span class="material-symbols-outlined mb-1">grid_view</span>
+<span class="font-label-sm text-label-sm">Categories</span>
+</button>
+<!-- Orders -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-low dark:hover:bg-surface-container-high rounded-full active:scale-90 transition-all duration-200 p-2 w-16">
+<span class="material-symbols-outlined mb-1">receipt_long</span>
+<span class="font-label-sm text-label-sm">Orders</span>
+</button>
+<!-- Cart with Badge -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-low dark:hover:bg-surface-container-high rounded-full active:scale-90 transition-all duration-200 p-2 w-16 relative">
+<div class="relative">
+<span class="material-symbols-outlined mb-1">shopping_cart</span>
+<span class="absolute -top-1 -right-2 bg-error text-on-error font-label-sm text-[10px] w-4 h-4 rounded-full flex items-center justify-center border border-surface-container-lowest">3</span>
+</div>
+<span class="font-label-sm text-label-sm">Cart</span>
+</button>
+<!-- Profile -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-low dark:hover:bg-surface-container-high rounded-full active:scale-90 transition-all duration-200 p-2 w-16">
+<span class="material-symbols-outlined mb-1">person</span>
+<span class="font-label-sm text-label-sm">Profile</span>
+</button>
+</div>
+</nav>
+
+
+</body></html>

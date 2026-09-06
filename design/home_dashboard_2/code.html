@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Delivery Partner Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-fixed": "#131b2e",
+                        "surface-dim": "#d8dadc",
+                        "surface-container-low": "#f2f4f6",
+                        "on-secondary-container": "#5c647a",
+                        "primary": "#006c49",
+                        "inverse-on-surface": "#eff1f3",
+                        "secondary-container": "#dae2fd",
+                        "primary-fixed": "#6ffbbe",
+                        "on-error": "#ffffff",
+                        "secondary-fixed-dim": "#bec6e0",
+                        "on-primary-fixed": "#002113",
+                        "secondary-fixed": "#dae2fd",
+                        "surface": "#f7f9fb",
+                        "inverse-primary": "#4edea3",
+                        "on-primary-container": "#00422b",
+                        "secondary": "#565e74",
+                        "outline": "#6c7a71",
+                        "on-tertiary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "surface-bright": "#f7f9fb",
+                        "error": "#ba1a1a",
+                        "tertiary": "#515f74",
+                        "tertiary-fixed-dim": "#b9c7e0",
+                        "on-tertiary-fixed": "#0d1c2f",
+                        "background": "#f7f9fb",
+                        "on-primary": "#ffffff",
+                        "tertiary-container": "#95a4bb",
+                        "on-error-container": "#93000a",
+                        "surface-container-high": "#e6e8ea",
+                        "on-primary-fixed-variant": "#005236",
+                        "on-surface": "#191c1e",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary-container": "#2c3a4e",
+                        "on-surface-variant": "#3c4a42",
+                        "on-secondary-fixed-variant": "#3f465c",
+                        "outline-variant": "#bbcabf",
+                        "primary-container": "#10b981",
+                        "surface-container": "#eceef0",
+                        "surface-tint": "#006c49",
+                        "surface-container-highest": "#e0e3e5",
+                        "on-background": "#191c1e",
+                        "surface-variant": "#e0e3e5",
+                        "tertiary-fixed": "#d5e3fd",
+                        "on-tertiary-fixed-variant": "#3a485c",
+                        "inverse-surface": "#2d3133",
+                        "primary-fixed-dim": "#4edea3"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "lg": "24px",
+                        "xs": "4px",
+                        "touch-target": "48px",
+                        "xl": "32px",
+                        "sm": "8px",
+                        "base": "4px",
+                        "margin-mobile": "16px",
+                        "gutter": "16px",
+                        "md": "16px",
+                        "safe": "env(safe-area-inset-bottom)"
+                    },
+                    "fontFamily": {
+                        "label-md": ["Plus Jakarta Sans"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "headline-sm": ["Plus Jakarta Sans"],
+                        "label-lg": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "headline-lg": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-sm": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+                        "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.02em", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "26px", "fontWeight": "400" }],
+                        "headline-md": ["22px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen flex flex-col md:hidden">
+<!-- TopAppBar -->
+<header class="bg-surface w-full top-0 sticky border-b border-outline-variant z-40">
+<div class="flex justify-between items-center h-touch-target px-md w-full">
+<div class="flex items-center gap-sm">
+<img class="w-8 h-8 rounded-full object-cover" data-alt="A closely cropped, high-quality photograph of a delivery driver wearing a green cap and a high-visibility vest. The driver is smiling softly, indicating approachability and reliability. The lighting is natural, bright daylight casting a soft shadow on one side of the face, emphasizing a professional yet humanizing portrait suitable for an app avatar." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDQbnzdGSEmU6MBpsudbeVQYbHeaxp34C3MpKhWDwrnOca-V_E2J-2dzbA3zft_jr5FOhW-rupAjn6HHvi_S7fxQd21oadK6uQFPoRMJ9HEKIa65O3pOyOiuS_aylLwN60ynM1NTXI-PkmBWncoCuaDK9tNXEgWqXOg2iJHOTUbDMhcvF2VZEZHbAMx82M6GSL8hS7GoZjgBUL_DEMzXgOyBix3rYshHxeu66vKNzJINKuouUYKx2yk"/>
+<span class="font-headline-md text-headline-md text-primary font-bold">Delivery Partner</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-md text-label-md text-primary">ONLINE</span>
+<div class="w-10 h-6 bg-primary-container rounded-full relative cursor-pointer" id="onlineToggle">
+<div class="absolute right-1 top-1 w-4 h-4 bg-on-primary-container rounded-full shadow-sm transition-transform duration-200"></div>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 flex flex-col gap-lg p-md overflow-y-auto pb-32">
+<!-- Greeting -->
+<section class="mt-sm">
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">Good evening, Rahul</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">You have deliveries waiting.</p>
+</section>
+<!-- Today's Delivery Card -->
+<section>
+<h2 class="font-headline-sm text-headline-sm text-on-surface mb-sm">Today's Delivery</h2>
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-lg flex flex-col gap-md shadow-[0px_4px_20px_rgba(15,23,42,0.04)]">
+<!-- Header -->
+<div class="flex justify-between items-start">
+<div>
+<span class="inline-block bg-primary-container/20 text-on-primary-container px-2 py-1 rounded font-label-md text-label-md mb-2">ON THE WAY</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Order #1024</h3>
+</div>
+<div class="text-right">
+<span class="font-headline-md text-headline-md text-primary">15 min</span>
+<p class="font-body-md text-body-md text-on-surface-variant">2.4 km</p>
+</div>
+</div>
+<!-- Customer Details -->
+<div class="flex flex-col gap-sm border-t border-outline-variant pt-md">
+<div class="flex items-center gap-sm text-on-surface">
+<span class="material-symbols-outlined text-outline" style="font-variation-settings: 'FILL' 1;">person</span>
+<span class="font-label-lg text-label-lg">Amit Sharma</span>
+</div>
+<div class="flex items-start gap-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-outline mt-1" style="font-variation-settings: 'FILL' 1;">location_on</span>
+<span class="font-body-md text-body-md">Sherpur, Sadabad</span>
+</div>
+</div>
+<!-- Map Placeholder -->
+<div class="w-full h-32 rounded-lg bg-surface-container overflow-hidden border border-outline-variant relative">
+<div class="w-full h-full bg-cover bg-center" data-alt="A stylized, flat-vector mobile map interface showing a delivery route. A bright green line traces a path through a simplistic grid of light gray streets on an off-white background. A blue dot indicates the current driver location, and a red destination pin marks the drop-off point. The aesthetic is clean, high-contrast, and focused purely on navigation utility." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBKLPHcgrjdi2z3IV2tSkNkxE25taL9SAXDGLMl0lTFXjhppkPfX4j7giS-8eMVBGIR1XlEc3-5SLwEnO6G8BdqbMqJebJtcbYOYRpeusOzEuX43s8fnJ0sQ1sF_GoO8DqLk9OU-tgMoMJwNNBZscyRYjMXGMY2a1uPbnp4AjD_Kv5t8gt7zduhOjadT01cRq91c7VDWW5L8-3MCWDUJG6l5EwXRBdo-CPq07-9bd9OMyfDUE5onpH3')"></div>
+</div>
+<!-- Actions -->
+<div class="flex flex-col gap-sm mt-xs">
+<button class="w-full h-[56px] bg-primary text-on-primary rounded-lg font-headline-sm text-headline-sm flex items-center justify-center gap-2 active:scale-95 transition-transform duration-100">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">visibility</span>
+                        View Delivery
+                    </button>
+<button class="w-full h-[56px] border border-outline text-on-surface rounded-lg font-headline-sm text-headline-sm flex items-center justify-center gap-2 active:scale-95 transition-transform duration-100 bg-surface">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">navigation</span>
+                        Navigate
+                    </button>
+</div>
+</div>
+</section>
+<!-- Stats Footer -->
+<section class="grid grid-cols-3 gap-sm mt-auto pb-4">
+<div class="bg-surface-container rounded-lg p-sm flex flex-col items-center border border-outline-variant">
+<span class="font-label-md text-label-md text-on-surface-variant">Today</span>
+<span class="font-headline-md text-headline-md text-on-surface">4</span>
+</div>
+<div class="bg-surface-container rounded-lg p-sm flex flex-col items-center border border-outline-variant">
+<span class="font-label-md text-label-md text-on-surface-variant">Completed</span>
+<span class="font-headline-md text-headline-md text-primary">3</span>
+</div>
+<div class="bg-surface-container rounded-lg p-sm flex flex-col items-center border border-outline-variant">
+<span class="font-label-md text-label-md text-on-surface-variant">Pending</span>
+<span class="font-headline-md text-headline-md text-error">1</span>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="bg-surface fixed bottom-0 w-full z-50 h-[80px] border-t border-outline-variant shadow-lg flex justify-around items-center px-md pb-safe">
+<button class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-lg py-1 active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="font-label-md text-label-md mt-1">Home</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-secondary-container hover:bg-surface-container active:scale-90 transition-transform duration-200 px-4 py-1 rounded-full">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">local_shipping</span>
+<span class="font-label-md text-label-md mt-1">Deliveries</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-secondary-container hover:bg-surface-container active:scale-90 transition-transform duration-200 px-4 py-1 rounded-full">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">history</span>
+<span class="font-label-md text-label-md mt-1">History</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-secondary-container hover:bg-surface-container active:scale-90 transition-transform duration-200 px-4 py-1 rounded-full">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">person</span>
+<span class="font-label-md text-label-md mt-1">Profile</span>
+</button>
+</nav>
+<script>
+        // Simple toggle interaction for Online status
+        const toggle = document.getElementById('onlineToggle');
+        let isOnline = true;
+        
+        toggle.addEventListener('click', () => {
+            isOnline = !isOnline;
+            const knob = toggle.querySelector('div');
+            if(isOnline) {
+                toggle.classList.remove('bg-surface-variant');
+                toggle.classList.add('bg-primary-container');
+                knob.classList.remove('left-1');
+                knob.classList.add('right-1');
+            } else {
+                toggle.classList.add('bg-surface-variant');
+                toggle.classList.remove('bg-primary-container');
+                knob.classList.remove('right-1');
+                knob.classList.add('left-1');
+            }
+        });
+    </script>
+</body></html>

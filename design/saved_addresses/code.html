@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Saved Addresses - LocalDash</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config injected from prompt -->
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-tint": "#006c49",
+                      "inverse-surface": "#2b322d",
+                      "on-tertiary": "#ffffff",
+                      "secondary": "#855300",
+                      "primary-fixed-dim": "#4edea3",
+                      "on-background": "#161d19",
+                      "on-secondary-container": "#684000",
+                      "on-primary-container": "#00422b",
+                      "on-error-container": "#93000a",
+                      "on-primary-fixed": "#002113",
+                      "secondary-fixed-dim": "#ffb95f",
+                      "outline": "#6c7a71",
+                      "outline-variant": "#bbcabf",
+                      "surface-container-high": "#e3eae3",
+                      "surface-container": "#e8f0e9",
+                      "inverse-primary": "#4edea3",
+                      "primary": "#006c49",
+                      "on-tertiary-container": "#711419",
+                      "on-surface-variant": "#3c4a42",
+                      "on-secondary-fixed-variant": "#653e00",
+                      "primary-fixed": "#6ffbbe",
+                      "secondary-container": "#fea619",
+                      "surface-container-low": "#eef6ee",
+                      "tertiary-fixed": "#ffdad7",
+                      "surface-container-highest": "#dde4dd",
+                      "error-container": "#ffdad6",
+                      "on-tertiary-fixed": "#410005",
+                      "surface-container-lowest": "#ffffff",
+                      "surface": "#f4fbf4",
+                      "on-primary": "#ffffff",
+                      "secondary-fixed": "#ffddb8",
+                      "background": "#f4fbf4",
+                      "on-surface": "#161d19",
+                      "on-tertiary-fixed-variant": "#842225",
+                      "primary-container": "#10b981",
+                      "inverse-on-surface": "#ebf3eb",
+                      "on-secondary": "#ffffff",
+                      "surface-variant": "#dde4dd",
+                      "tertiary-container": "#fc7c78",
+                      "on-error": "#ffffff",
+                      "error": "#ba1a1a",
+                      "on-primary-fixed-variant": "#005236",
+                      "surface-dim": "#d4dcd5",
+                      "tertiary": "#a43a3a",
+                      "surface-bright": "#f4fbf4",
+                      "on-secondary-fixed": "#2a1700",
+                      "tertiary-fixed-dim": "#ffb3af"
+              },
+              "borderRadius": {
+                      "DEFAULT": "1rem",
+                      "lg": "2rem",
+                      "xl": "3rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "margin-desktop": "40px",
+                      "md": "16px",
+                      "margin-mobile": "20px",
+                      "xs": "4px",
+                      "unit": "8px",
+                      "sm": "8px",
+                      "lg": "24px",
+                      "xl": "32px",
+                      "gutter": "16px"
+              },
+              "fontFamily": {
+                      "body-md": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "headline-md": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "label-sm": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "label-lg": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "body-lg": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "headline-xl": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "headline-lg": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "headline-lg-mobile": [
+                              "Plus Jakarta Sans"
+                      ]
+              },
+              "fontSize": {
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-md": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.02em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-lg": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "letterSpacing": "0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-xl": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "800"
+                              }
+                      ],
+                      "headline-lg": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "22px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "700"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+<style>
+        body {
+            background-color: #FAFAFA; /* Level 0 Background per style guidance */
+        }
+        
+        /* Soft Minimalist Glassmorphism for cards */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* Subtle ambient hover effect */
+        .glass-card:hover {
+            box-shadow: 0px 8px 24px rgba(16, 185, 129, 0.08); /* Tinted by primary green */
+            transform: translateY(-2px);
+            transition: all 0.3s ease;
+        }
+        
+        /* Utility for Material Symbols fill state */
+        .material-symbols-outlined[data-weight="fill"] {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-body-md text-on-surface antialiased min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-on-background shadow-sm docked full-width top-0 sticky z-50 transition-colors duration-300">
+<div class="flex items-center justify-between px-margin-mobile py-md w-full max-w-3xl mx-auto">
+<!-- Leading Icon: Back button for sub-page -->
+<button aria-label="Go back" class="text-primary dark:text-primary-fixed-dim hover:opacity-80 transition-opacity active:scale-95 flex items-center justify-center p-2 rounded-full hover:bg-surface-container-low">
+<span class="material-symbols-outlined text-headline-md">arrow_back</span>
+</button>
+<!-- Headline -->
+<h1 class="font-headline-md text-headline-md text-on-surface">Saved Addresses</h1>
+<!-- Trailing Space (empty to balance the flex layout) -->
+<div class="w-10"></div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 w-full max-w-3xl mx-auto px-margin-mobile py-lg pb-32">
+<!-- Instructional Text -->
+<p class="font-body-md text-body-md text-on-surface-variant mb-lg px-2">
+            Manage your delivery locations for a faster checkout experience.
+        </p>
+<!-- Addresses List (Bento-style layout on md screens) -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-md">
+<!-- Address Card: Home (Default) -->
+<div class="glass-card rounded-xl p-md flex flex-col gap-sm relative group cursor-pointer border-2 border-primary-container">
+<!-- Top Row: Icon, Title, Badge -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 rounded-full bg-surface-container-low flex items-center justify-center text-primary-container">
+<span class="material-symbols-outlined" data-icon="home" data-weight="fill">home</span>
+</div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Home</h2>
+</div>
+<!-- Default Badge -->
+<span class="bg-surface-container-low text-primary-container font-label-sm text-label-sm px-3 py-1 rounded-full border border-primary-fixed">Default</span>
+</div>
+<!-- Address Details -->
+<div class="mt-xs">
+<p class="font-body-md text-body-md text-on-surface-variant line-clamp-2">
+                        123 Green Valley Road, Apt 4B<br/>
+                        San Francisco, CA 94110
+                    </p>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1 text-sm">
+                        Instructions: Leave at front door.
+                    </p>
+</div>
+<!-- Actions -->
+<div class="mt-auto pt-sm flex justify-end gap-sm opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+<button aria-label="Edit Home Address" class="text-on-surface-variant hover:text-primary transition-colors p-2 rounded-full hover:bg-surface-container-low">
+<span class="material-symbols-outlined text-[20px]" data-icon="edit">edit</span>
+</button>
+<!-- No delete button for default address -->
+</div>
+</div>
+<!-- Address Card: Work -->
+<div class="glass-card rounded-xl p-md flex flex-col gap-sm relative group cursor-pointer border border-transparent">
+<!-- Top Row: Icon, Title -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 rounded-full bg-surface-container-lowest border border-outline-variant flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="work">work</span>
+</div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Work</h2>
+</div>
+</div>
+<!-- Address Details -->
+<div class="mt-xs">
+<p class="font-body-md text-body-md text-on-surface-variant line-clamp-2">
+                        45 Corporate Towers, Suite 1200<br/>
+                        San Francisco, CA 94105
+                    </p>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1 text-sm">
+                        Instructions: Leave with receptionist.
+                    </p>
+</div>
+<!-- Actions -->
+<div class="mt-auto pt-sm flex justify-end gap-sm opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+<button aria-label="Edit Work Address" class="text-on-surface-variant hover:text-primary transition-colors p-2 rounded-full hover:bg-surface-container-low">
+<span class="material-symbols-outlined text-[20px]" data-icon="edit">edit</span>
+</button>
+<button aria-label="Delete Work Address" class="text-on-surface-variant hover:text-error transition-colors p-2 rounded-full hover:bg-error-container">
+<span class="material-symbols-outlined text-[20px]" data-icon="delete">delete</span>
+</button>
+</div>
+</div>
+<!-- Empty State / Add Placeholder (Visual cue for empty space if only 2 cards) -->
+<div class="hidden md:flex border-2 border-dashed border-outline-variant rounded-xl p-md flex-col items-center justify-center gap-sm text-on-surface-variant hover:bg-surface-container-low hover:border-primary-container transition-colors cursor-pointer min-h-[160px]">
+<span class="material-symbols-outlined text-[32px] opacity-50" data-icon="add_location">add_location</span>
+<p class="font-label-lg text-label-lg">Add another location</p>
+</div>
+</div>
+</main>
+<!-- Floating Action Area (Bottom Pinned) -->
+<div class="fixed bottom-0 w-full bg-gradient-to-t from-background via-background to-transparent pt-xl pb-margin-mobile px-margin-mobile z-40">
+<div class="max-w-3xl mx-auto">
+<!-- Primary Button: Add New Address -->
+<button class="w-full bg-primary-container text-on-tertiary font-headline-md text-body-lg font-bold py-4 rounded-full shadow-[0px_8px_24px_rgba(16,185,129,0.15)] flex items-center justify-center gap-xs hover:opacity-90 active:scale-95 transition-all">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+                Add New Address
+            </button>
+</div>
+</div>
+<!-- Note: BottomNavBar is suppressed as this is a sub-page (Address Management) with a back button, indicating a temporary departure from the main flow. -->
+<script>
+        // Simple micro-interaction for active states on cards
+        document.querySelectorAll('.glass-card').forEach(card => {
+            card.addEventListener('mousedown', () => {
+                card.style.transform = 'scale(0.98)';
+            });
+            card.addEventListener('mouseup', () => {
+                card.style.transform = 'scale(1) translateY(-2px)';
+            });
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'scale(1)';
+            });
+        });
+    </script>
+</body></html>

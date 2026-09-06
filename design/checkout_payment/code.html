@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Checkout - LocalDash</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-tint": "#006c49",
+                        "inverse-surface": "#2b322d",
+                        "on-tertiary": "#ffffff",
+                        "secondary": "#855300",
+                        "primary-fixed-dim": "#4edea3",
+                        "on-background": "#161d19",
+                        "on-secondary-container": "#684000",
+                        "on-primary-container": "#00422b",
+                        "on-error-container": "#93000a",
+                        "on-primary-fixed": "#002113",
+                        "secondary-fixed-dim": "#ffb95f",
+                        "outline": "#6c7a71",
+                        "outline-variant": "#bbcabf",
+                        "surface-container-high": "#e3eae3",
+                        "surface-container": "#e8f0e9",
+                        "inverse-primary": "#4edea3",
+                        "primary": "#006c49",
+                        "on-tertiary-container": "#711419",
+                        "on-surface-variant": "#3c4a42",
+                        "on-secondary-fixed-variant": "#653e00",
+                        "primary-fixed": "#6ffbbe",
+                        "secondary-container": "#fea619",
+                        "surface-container-low": "#eef6ee",
+                        "tertiary-fixed": "#ffdad7",
+                        "surface-container-highest": "#dde4dd",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-fixed": "#410005",
+                        "surface-container-lowest": "#ffffff",
+                        "surface": "#f4fbf4",
+                        "on-primary": "#ffffff",
+                        "secondary-fixed": "#ffddb8",
+                        "background": "#f4fbf4",
+                        "on-surface": "#161d19",
+                        "on-tertiary-fixed-variant": "#842225",
+                        "primary-container": "#10b981",
+                        "inverse-on-surface": "#ebf3eb",
+                        "on-secondary": "#ffffff",
+                        "surface-variant": "#dde4dd",
+                        "tertiary-container": "#fc7c78",
+                        "on-error": "#ffffff",
+                        "error": "#ba1a1a",
+                        "on-primary-fixed-variant": "#005236",
+                        "surface-dim": "#d4dcd5",
+                        "tertiary": "#a43a3a",
+                        "surface-bright": "#f4fbf4",
+                        "on-secondary-fixed": "#2a1700",
+                        "tertiary-fixed-dim": "#ffb3af"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-desktop": "40px",
+                        "md": "16px",
+                        "margin-mobile": "20px",
+                        "xs": "4px",
+                        "unit": "8px",
+                        "sm": "8px",
+                        "lg": "24px",
+                        "xl": "32px",
+                        "gutter": "16px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "label-sm": ["Plus Jakarta Sans"],
+                        "label-lg": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "headline-xl": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "700" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600" }],
+                        "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "500" }],
+                        "headline-xl": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+                        "headline-lg": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+                        "headline-lg-mobile": ["22px", { "lineHeight": "28px", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #f4fbf4;
+            color: #161d19;
+            -webkit-font-smoothing: antialiased;
+        }
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom, 24px); }
+        .pt-safe { padding-top: env(safe-area-inset-top, 0px); }
+        
+        /* Custom Radio Button Styles */
+        .radio-custom:checked + div {
+            border-color: #006c49;
+            background-color: #eef6ee;
+        }
+        .radio-custom:checked + div .radio-inner {
+            background-color: #006c49;
+            transform: scale(1);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background min-h-screen flex flex-col pt-safe">
+<!-- TopAppBar -->
+<header class="docked full-width top-0 sticky z-50 bg-surface dark:bg-on-background shadow-sm">
+<div class="flex items-center justify-between px-margin-mobile md:px-margin-desktop py-md w-full">
+<button class="flex items-center justify-center p-2 rounded-full hover:bg-surface-container-low transition-colors active:scale-95 text-on-surface-variant dark:text-outline-variant">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">arrow_back</span>
+</button>
+<h1 class="font-headline-md text-headline-md text-on-background">Checkout</h1>
+<div class="w-10"></div> <!-- Placeholder for balance -->
+</div>
+</header>
+<main class="flex-1 px-margin-mobile md:px-margin-desktop py-lg pb-32 max-w-3xl mx-auto w-full space-y-lg">
+<!-- Section 1: Delivery Address -->
+<section class="bg-surface-container-lowest rounded-[24px] p-md shadow-[0px_4px_20px_rgba(0,0,0,0.04)]">
+<div class="flex items-center justify-between mb-sm">
+<h2 class="font-headline-md text-headline-md text-on-background">Delivery Address</h2>
+<button class="font-label-lg text-label-lg text-primary hover:opacity-80 transition-opacity">Change</button>
+</div>
+<div class="flex items-start gap-md mt-md">
+<div class="bg-surface-container-low p-2 rounded-full flex-shrink-0 text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">location_on</span>
+</div>
+<div>
+<h3 class="font-body-lg text-body-lg text-on-background">Home</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mt-xs">123 Green Valley Road, Apt 4B, Springfield, IL 62704</p>
+<p class="font-body-md text-body-md text-on-surface-variant mt-xs">Instructions: Leave at door, don't ring bell.</p>
+</div>
+</div>
+</section>
+<!-- Section 2: Delivery Instructions -->
+<section class="bg-surface-container-lowest rounded-[24px] p-md shadow-[0px_4px_20px_rgba(0,0,0,0.04)]">
+<h2 class="font-headline-md text-headline-md text-on-background mb-md">Delivery Instructions</h2>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant" style="font-variation-settings: 'FILL' 0;">chat</span>
+<input class="w-full bg-surface-container-low border-none rounded-full py-3 pl-12 pr-4 font-body-md text-body-md text-on-background placeholder:text-on-surface-variant focus:ring-2 focus:ring-primary focus:bg-surface-container-lowest transition-all" placeholder="Add custom instructions (e.g., ring bell)" type="text"/>
+</div>
+</section>
+<!-- Section 3: Payment Method -->
+<section class="bg-surface-container-lowest rounded-[24px] p-md shadow-[0px_4px_20px_rgba(0,0,0,0.04)]">
+<h2 class="font-headline-md text-headline-md text-on-background mb-md">Payment Method</h2>
+<div class="space-y-sm">
+<!-- UPI -->
+<label class="cursor-pointer block relative">
+<input checked="" class="radio-custom sr-only" name="payment_method" type="radio"/>
+<div class="flex items-center justify-between p-md rounded-[16px] border border-outline-variant bg-surface-container-lowest transition-all hover:bg-surface-container-low">
+<div class="flex items-center gap-md">
+<div class="bg-surface-container p-2 rounded-full text-on-surface">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">qr_code_scanner</span>
+</div>
+<span class="font-body-lg text-body-lg text-on-background">UPI (GPay, PhonePe, Paytm)</span>
+</div>
+<div class="w-5 h-5 rounded-full border-2 border-outline-variant flex items-center justify-center bg-white transition-colors">
+<div class="radio-inner w-2.5 h-2.5 rounded-full bg-transparent transform scale-0 transition-transform"></div>
+</div>
+</div>
+</label>
+<!-- Cards -->
+<label class="cursor-pointer block relative">
+<input class="radio-custom sr-only" name="payment_method" type="radio"/>
+<div class="flex items-center justify-between p-md rounded-[16px] border border-outline-variant bg-surface-container-lowest transition-all hover:bg-surface-container-low">
+<div class="flex items-center gap-md">
+<div class="bg-surface-container p-2 rounded-full text-on-surface">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">credit_card</span>
+</div>
+<span class="font-body-lg text-body-lg text-on-background">Credit / Debit Card</span>
+</div>
+<div class="w-5 h-5 rounded-full border-2 border-outline-variant flex items-center justify-center bg-white transition-colors">
+<div class="radio-inner w-2.5 h-2.5 rounded-full bg-transparent transform scale-0 transition-transform"></div>
+</div>
+</div>
+</label>
+<!-- Wallet -->
+<label class="cursor-pointer block relative">
+<input class="radio-custom sr-only" name="payment_method" type="radio"/>
+<div class="flex items-center justify-between p-md rounded-[16px] border border-outline-variant bg-surface-container-lowest transition-all hover:bg-surface-container-low">
+<div class="flex items-center gap-md">
+<div class="bg-surface-container p-2 rounded-full text-on-surface">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">account_balance_wallet</span>
+</div>
+<span class="font-body-lg text-body-lg text-on-background">Dash Wallet</span>
+</div>
+<div class="w-5 h-5 rounded-full border-2 border-outline-variant flex items-center justify-center bg-white transition-colors">
+<div class="radio-inner w-2.5 h-2.5 rounded-full bg-transparent transform scale-0 transition-transform"></div>
+</div>
+</div>
+</label>
+<!-- COD -->
+<label class="cursor-pointer block relative">
+<input class="radio-custom sr-only" name="payment_method" type="radio"/>
+<div class="flex items-center justify-between p-md rounded-[16px] border border-outline-variant bg-surface-container-lowest transition-all hover:bg-surface-container-low">
+<div class="flex items-center gap-md">
+<div class="bg-surface-container p-2 rounded-full text-on-surface">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">payments</span>
+</div>
+<span class="font-body-lg text-body-lg text-on-background">Cash on Delivery</span>
+</div>
+<div class="w-5 h-5 rounded-full border-2 border-outline-variant flex items-center justify-center bg-white transition-colors">
+<div class="radio-inner w-2.5 h-2.5 rounded-full bg-transparent transform scale-0 transition-transform"></div>
+</div>
+</div>
+</label>
+</div>
+</section>
+<!-- Section 4: Bill Summary -->
+<section class="bg-surface-container-lowest rounded-[24px] p-md shadow-[0px_4px_20px_rgba(0,0,0,0.04)]">
+<h2 class="font-headline-md text-headline-md text-on-background mb-md">Bill Summary</h2>
+<div class="space-y-sm">
+<div class="flex justify-between items-center">
+<span class="font-body-md text-body-md text-on-surface-variant">Item Total</span>
+<span class="font-body-lg text-body-lg text-on-background">₹450</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="font-body-md text-body-md text-on-surface-variant">Delivery Fee</span>
+<span class="font-body-lg text-body-lg text-on-background">₹25</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="font-body-md text-body-md text-on-surface-variant">Taxes &amp; Charges</span>
+<span class="font-body-lg text-body-lg text-on-background">₹12</span>
+</div>
+<div class="h-[1px] bg-outline-variant/30 w-full my-sm"></div>
+<div class="flex justify-between items-center">
+<span class="font-headline-md text-headline-md text-on-background">To Pay</span>
+<span class="font-headline-md text-headline-md text-primary">₹487</span>
+</div>
+</div>
+</section>
+</main>
+<!-- Floating Action Button / Bottom Fixed Area for Checkout -->
+<div class="fixed bottom-0 w-full z-50 bg-surface-container-lowest border-t border-outline-variant/20 shadow-[0px_-8px_24px_rgba(0,0,0,0.04)] px-margin-mobile md:px-margin-desktop py-md pb-safe flex justify-center">
+<div class="max-w-3xl w-full flex items-center justify-between gap-md">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Total</span>
+<span class="font-headline-lg-mobile text-headline-lg-mobile text-on-background">₹487</span>
+</div>
+<button class="flex-1 bg-primary text-white rounded-full py-4 px-lg font-headline-md text-headline-md shadow-[0px_8px_24px_rgba(16,185,129,0.15)] hover:opacity-90 transition-all active:scale-95 flex items-center justify-center gap-sm">
+                Place Order
+                <span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 0;">arrow_forward</span>
+</button>
+</div>
+</div>
+</body></html>

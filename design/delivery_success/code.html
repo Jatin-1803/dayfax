@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Delivery Success</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-fixed": "#131b2e",
+                        "surface-dim": "#d8dadc",
+                        "surface-container-low": "#f2f4f6",
+                        "on-secondary-container": "#5c647a",
+                        "primary": "#006c49",
+                        "inverse-on-surface": "#eff1f3",
+                        "secondary-container": "#dae2fd",
+                        "primary-fixed": "#6ffbbe",
+                        "on-error": "#ffffff",
+                        "secondary-fixed-dim": "#bec6e0",
+                        "on-primary-fixed": "#002113",
+                        "secondary-fixed": "#dae2fd",
+                        "surface": "#f7f9fb",
+                        "inverse-primary": "#4edea3",
+                        "on-primary-container": "#00422b",
+                        "secondary": "#565e74",
+                        "outline": "#6c7a71",
+                        "on-tertiary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "surface-bright": "#f7f9fb",
+                        "error": "#ba1a1a",
+                        "tertiary": "#515f74",
+                        "tertiary-fixed-dim": "#b9c7e0",
+                        "on-tertiary-fixed": "#0d1c2f",
+                        "background": "#f7f9fb",
+                        "on-primary": "#ffffff",
+                        "tertiary-container": "#95a4bb",
+                        "on-error-container": "#93000a",
+                        "surface-container-high": "#e6e8ea",
+                        "on-primary-fixed-variant": "#005236",
+                        "on-surface": "#191c1e",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary-container": "#2c3a4e",
+                        "on-surface-variant": "#3c4a42",
+                        "on-secondary-fixed-variant": "#3f465c",
+                        "outline-variant": "#bbcabf",
+                        "primary-container": "#10b981",
+                        "surface-container": "#eceef0",
+                        "surface-tint": "#006c49",
+                        "surface-container-highest": "#e0e3e5",
+                        "on-background": "#191c1e",
+                        "surface-variant": "#e0e3e5",
+                        "tertiary-fixed": "#d5e3fd",
+                        "on-tertiary-fixed-variant": "#3a485c",
+                        "inverse-surface": "#2d3133",
+                        "primary-fixed-dim": "#4edea3"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "lg": "24px",
+                        "xs": "4px",
+                        "touch-target": "48px",
+                        "xl": "32px",
+                        "sm": "8px",
+                        "base": "4px",
+                        "margin-mobile": "16px",
+                        "gutter": "16px",
+                        "md": "16px"
+                    },
+                    "fontFamily": {
+                        "label-md": ["Plus Jakarta Sans"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "headline-sm": ["Plus Jakarta Sans"],
+                        "label-lg": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "headline-lg": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-sm": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+                        "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.02em", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "26px", "fontWeight": "400" }],
+                        "headline-md": ["22px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #006c49;
+            opacity: 0;
+        }
+        @keyframes fall {
+            0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex flex-col items-center justify-center relative overflow-hidden">
+<!-- Confetti Container -->
+<div class="absolute inset-0 pointer-events-none z-0" id="confetti-container"></div>
+<main class="w-full max-w-md px-gutter z-10 flex flex-col items-center">
+<!-- Success Icon -->
+<div class="w-24 h-24 bg-primary-container rounded-full flex items-center justify-center mb-xl shadow-lg relative">
+<div class="absolute inset-0 bg-primary-container rounded-full animate-ping opacity-25"></div>
+<span class="material-symbols-outlined text-[48px] text-on-primary-container" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<!-- Headline -->
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface mb-xs text-center">Delivery Completed</h1>
+<p class="font-body-md text-body-md text-on-surface-variant mb-xl text-center">Great job! The package was delivered successfully.</p>
+<!-- Details Card -->
+<div class="w-full bg-surface-container-lowest rounded-xl p-lg border border-outline-variant mb-xl">
+<h2 class="font-label-lg text-label-lg text-on-surface-variant mb-md uppercase tracking-wider">Delivery Details</h2>
+<div class="space-y-md">
+<div class="flex justify-between items-center">
+<span class="font-body-md text-body-md text-on-surface-variant">Order ID</span>
+<span class="font-label-lg text-label-lg text-on-surface">#ORD-9482-XK</span>
+</div>
+<div class="h-[1px] bg-outline-variant opacity-50 w-full"></div>
+<div class="flex justify-between items-start">
+<span class="font-body-md text-body-md text-on-surface-variant">Customer</span>
+<div class="text-right">
+<span class="font-label-lg text-label-lg text-on-surface block">Sarah Jenkins</span>
+<span class="font-label-md text-label-md text-on-surface-variant">Signature Required: Yes</span>
+</div>
+</div>
+<div class="h-[1px] bg-outline-variant opacity-50 w-full"></div>
+<div class="flex justify-between items-start">
+<span class="font-body-md text-body-md text-on-surface-variant">Address</span>
+<span class="font-label-lg text-label-lg text-on-surface text-right w-2/3">4200 Riverfront Pkwy, Apt 304, Seattle, WA 98109</span>
+</div>
+<div class="h-[1px] bg-outline-variant opacity-50 w-full"></div>
+<div class="flex justify-between items-center">
+<span class="font-body-md text-body-md text-on-surface-variant">Delivered At</span>
+<span class="font-label-lg text-label-lg text-on-surface">14:23 PM Today</span>
+</div>
+</div>
+</div>
+<!-- Actions -->
+<div class="w-full space-y-md mt-auto mb-lg">
+<button class="w-full h-[56px] bg-primary text-on-primary font-headline-sm text-headline-sm rounded-lg flex items-center justify-center hover:bg-on-primary-fixed-variant transition-colors active:scale-95 duration-100 shadow-md">
+                View Next Delivery
+            </button>
+<button class="w-full h-[56px] bg-surface text-primary border border-outline-variant font-headline-sm text-headline-sm rounded-lg flex items-center justify-center hover:bg-surface-container-low transition-colors active:scale-95 duration-100">
+                Back to Deliveries
+            </button>
+</div>
+</main>
+<script>
+        // Simple confetti effect for success screen
+        document.addEventListener('DOMContentLoaded', () => {
+            const container = document.getElementById('confetti-container');
+            const colors = ['#006c49', '#10b981', '#6ffbbe', '#4edea3']; // Brand colors
+            
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.classList.add('confetti');
+                
+                // Randomize properties
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                const left = Math.random() * 100;
+                const animDuration = Math.random() * 3 + 2;
+                const delay = Math.random() * 2;
+                
+                confetti.style.backgroundColor = color;
+                confetti.style.left = `${left}vw`;
+                confetti.style.top = `-10px`;
+                confetti.style.animation = `fall ${animDuration}s linear ${delay}s forwards`;
+                
+                // Random shapes
+                if (Math.random() > 0.5) {
+                    confetti.style.borderRadius = '50%';
+                }
+                
+                container.appendChild(confetti);
+            }
+        });
+    </script>
+</body></html>

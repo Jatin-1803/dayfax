@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>LocalDash - Login</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-tint": "#006c49",
+                        "inverse-surface": "#2b322d",
+                        "on-tertiary": "#ffffff",
+                        "secondary": "#855300",
+                        "primary-fixed-dim": "#4edea3",
+                        "on-background": "#161d19",
+                        "on-secondary-container": "#684000",
+                        "on-primary-container": "#00422b",
+                        "on-error-container": "#93000a",
+                        "on-primary-fixed": "#002113",
+                        "secondary-fixed-dim": "#ffb95f",
+                        "outline": "#6c7a71",
+                        "outline-variant": "#bbcabf",
+                        "surface-container-high": "#e3eae3",
+                        "surface-container": "#e8f0e9",
+                        "inverse-primary": "#4edea3",
+                        "primary": "#006c49",
+                        "on-tertiary-container": "#711419",
+                        "on-surface-variant": "#3c4a42",
+                        "on-secondary-fixed-variant": "#653e00",
+                        "primary-fixed": "#6ffbbe",
+                        "secondary-container": "#fea619",
+                        "surface-container-low": "#eef6ee",
+                        "tertiary-fixed": "#ffdad7",
+                        "surface-container-highest": "#dde4dd",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-fixed": "#410005",
+                        "surface-container-lowest": "#ffffff",
+                        "surface": "#f4fbf4",
+                        "on-primary": "#ffffff",
+                        "secondary-fixed": "#ffddb8",
+                        "background": "#f4fbf4",
+                        "on-surface": "#161d19",
+                        "on-tertiary-fixed-variant": "#842225",
+                        "primary-container": "#10b981",
+                        "inverse-on-surface": "#ebf3eb",
+                        "on-secondary": "#ffffff",
+                        "surface-variant": "#dde4dd",
+                        "tertiary-container": "#fc7c78",
+                        "on-error": "#ffffff",
+                        "error": "#ba1a1a",
+                        "on-primary-fixed-variant": "#005236",
+                        "surface-dim": "#d4dcd5",
+                        "tertiary": "#a43a3a",
+                        "surface-bright": "#f4fbf4",
+                        "on-secondary-fixed": "#2a1700",
+                        "tertiary-fixed-dim": "#ffb3af"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-desktop": "40px",
+                        "md": "16px",
+                        "margin-mobile": "20px",
+                        "xs": "4px",
+                        "unit": "8px",
+                        "sm": "8px",
+                        "lg": "24px",
+                        "xl": "32px",
+                        "gutter": "16px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "label-sm": ["Plus Jakarta Sans"],
+                        "label-lg": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "headline-xl": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "700" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600" }],
+                        "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "500" }],
+                        "headline-xl": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+                        "headline-lg": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+                        "headline-lg-mobile": ["22px", { "lineHeight": "28px", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface-container-lowest min-h-screen flex flex-col items-center justify-center relative overflow-hidden">
+<!-- Background Decoration (Soft Ambient Rings) -->
+<div class="absolute top-[-100px] left-[-100px] w-96 h-96 bg-primary-container opacity-5 rounded-full blur-3xl pointer-events-none"></div>
+<div class="absolute bottom-[-150px] right-[-150px] w-[500px] h-[500px] bg-secondary-container opacity-5 rounded-full blur-3xl pointer-events-none"></div>
+<main class="w-full max-w-md px-margin-mobile md:px-margin-desktop py-xl z-10 flex flex-col h-full md:h-auto md:bg-surface md:shadow-[0px_4px_20px_rgba(0,0,0,0.04)] md:rounded-xl">
+<!-- Header / Logo -->
+<div class="flex items-center mb-xl">
+<span class="material-symbols-outlined text-primary text-4xl mr-sm" data-weight="fill" style="font-variation-settings: 'FILL' 1;">location_on</span>
+<h1 class="font-headline-xl text-headline-xl text-primary tracking-tight">LocalDash</h1>
+</div>
+<!-- Headline -->
+<div class="mb-xl">
+<h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface mb-sm">Get your essentials delivered fast</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Enter your mobile number to get started.</p>
+</div>
+<!-- Form -->
+<form class="flex-grow flex flex-col justify-between" onsubmit="event.preventDefault(); showOTPState();">
+<!-- Input Area -->
+<div class="mb-xl transition-all duration-300" id="phone-input-group">
+<div class="flex items-center bg-[#F3F4F6] rounded-full p-sm focus-within:ring-2 focus-within:ring-primary-container focus-within:bg-white transition-all shadow-sm">
+<!-- Country Code Dropdown (Simulated) -->
+<div class="flex items-center pl-sm pr-xs py-sm border-r border-outline-variant/30 cursor-pointer text-on-surface font-body-lg text-body-lg">
+<span>+91</span>
+<span class="material-symbols-outlined text-on-surface-variant ml-xs text-sm">expand_more</span>
+</div>
+<!-- Phone Input -->
+<input class="flex-grow bg-transparent border-none focus:ring-0 text-on-surface font-body-lg text-body-lg px-md w-full placeholder:text-outline" id="phone-number" pattern="[0-9]{10}" placeholder="00000 00000" required="" type="tel"/>
+</div>
+</div>
+<!-- OTP Area (Hidden initially) -->
+<div class="mb-xl hidden opacity-0 transition-all duration-300 transform translate-y-4" id="otp-input-group">
+<label class="block font-label-lg text-label-lg text-on-surface mb-md">Enter 4-digit code</label>
+<div class="flex justify-between gap-sm">
+<input class="w-14 h-14 text-center font-headline-lg text-headline-lg text-on-surface bg-[#F3F4F6] border-none rounded-DEFAULT focus:ring-2 focus:ring-primary-container focus:bg-white shadow-sm transition-all otp-input" maxlength="1" type="text"/>
+<input class="w-14 h-14 text-center font-headline-lg text-headline-lg text-on-surface bg-[#F3F4F6] border-none rounded-DEFAULT focus:ring-2 focus:ring-primary-container focus:bg-white shadow-sm transition-all otp-input" maxlength="1" type="text"/>
+<input class="w-14 h-14 text-center font-headline-lg text-headline-lg text-on-surface bg-[#F3F4F6] border-none rounded-DEFAULT focus:ring-2 focus:ring-primary-container focus:bg-white shadow-sm transition-all otp-input" maxlength="1" type="text"/>
+<input class="w-14 h-14 text-center font-headline-lg text-headline-lg text-on-surface bg-[#F3F4F6] border-none rounded-DEFAULT focus:ring-2 focus:ring-primary-container focus:bg-white shadow-sm transition-all otp-input" maxlength="1" type="text"/>
+</div>
+<div class="mt-md text-center">
+<button class="font-label-lg text-label-lg text-primary hover:text-primary-container transition-colors" type="button">Resend Code</button>
+</div>
+</div>
+<!-- Action Area -->
+<div class="mt-auto md:mt-xl flex flex-col gap-md">
+<button class="w-full bg-primary text-on-primary font-label-lg text-label-lg py-md rounded-full shadow-[0px_8px_24px_rgba(16,185,129,0.15)] hover:opacity-90 active:scale-95 transition-all duration-200 flex items-center justify-center" id="main-action-btn" type="submit">
+<span id="btn-text">Continue</span>
+<span class="material-symbols-outlined ml-sm hidden" id="btn-icon">arrow_forward</span>
+</button>
+<p class="text-center font-body-md text-body-md text-on-surface-variant px-md mt-sm">
+                    By continuing, you agree to our 
+                    <a class="text-primary hover:underline" href="#">Terms of Service</a> and 
+                    <a class="text-primary hover:underline" href="#">Privacy Policy</a>.
+                </p>
+</div>
+</form>
+</main>
+<script>
+        // Simple Interaction Logic
+        let state = 'phone'; // 'phone' or 'otp'
+        
+        const phoneGroup = document.getElementById('phone-input-group');
+        const otpGroup = document.getElementById('otp-input-group');
+        const btnText = document.getElementById('btn-text');
+        const btnIcon = document.getElementById('btn-icon');
+        const otpInputs = document.querySelectorAll('.otp-input');
+
+        function showOTPState() {
+            if (state === 'phone') {
+                // Transition to OTP
+                phoneGroup.classList.add('opacity-0', 'pointer-events-none');
+                
+                setTimeout(() => {
+                    phoneGroup.classList.add('hidden');
+                    otpGroup.classList.remove('hidden');
+                    
+                    // Trigger reflow for animation
+                    void otpGroup.offsetWidth;
+                    
+                    otpGroup.classList.remove('opacity-0', 'translate-y-4');
+                    
+                    btnText.innerText = 'Verify & Login';
+                    btnIcon.classList.remove('hidden');
+                    
+                    state = 'otp';
+                    otpInputs[0].focus();
+                }, 300);
+            } else {
+                // Submit OTP (Mock)
+                const btn = document.getElementById('main-action-btn');
+                btn.innerHTML = '<span class="material-symbols-outlined animate-spin">refresh</span>';
+                setTimeout(() => {
+                    btn.innerHTML = '<span class="material-symbols-outlined text-on-primary">check</span>';
+                    btn.classList.replace('bg-primary', 'bg-primary-container');
+                }, 1000);
+            }
+        }
+
+        // OTP Input Auto-advance
+        otpInputs.forEach((input, index) => {
+            input.addEventListener('input', (e) => {
+                if (e.target.value.length === 1 && index < otpInputs.length - 1) {
+                    otpInputs[index + 1].focus();
+                }
+            });
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && e.target.value === '' && index > 0) {
+                    otpInputs[index - 1].focus();
+                }
+            });
+        });
+    </script>
+</body></html>

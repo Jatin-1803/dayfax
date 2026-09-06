@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Confirm Delivery</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-secondary-fixed": "#131b2e",
+                      "surface-dim": "#d8dadc",
+                      "surface-container-low": "#f2f4f6",
+                      "on-secondary-container": "#5c647a",
+                      "primary": "#006c49",
+                      "inverse-on-surface": "#eff1f3",
+                      "secondary-container": "#dae2fd",
+                      "primary-fixed": "#6ffbbe",
+                      "on-error": "#ffffff",
+                      "secondary-fixed-dim": "#bec6e0",
+                      "on-primary-fixed": "#002113",
+                      "secondary-fixed": "#dae2fd",
+                      "surface": "#f7f9fb",
+                      "inverse-primary": "#4edea3",
+                      "on-primary-container": "#00422b",
+                      "secondary": "#565e74",
+                      "outline": "#6c7a71",
+                      "on-tertiary": "#ffffff",
+                      "error-container": "#ffdad6",
+                      "surface-bright": "#f7f9fb",
+                      "error": "#ba1a1a",
+                      "tertiary": "#515f74",
+                      "tertiary-fixed-dim": "#b9c7e0",
+                      "on-tertiary-fixed": "#0d1c2f",
+                      "background": "#f7f9fb",
+                      "on-primary": "#ffffff",
+                      "tertiary-container": "#95a4bb",
+                      "on-error-container": "#93000a",
+                      "surface-container-high": "#e6e8ea",
+                      "on-primary-fixed-variant": "#005236",
+                      "on-surface": "#191c1e",
+                      "surface-container-lowest": "#ffffff",
+                      "on-secondary": "#ffffff",
+                      "on-tertiary-container": "#2c3a4e",
+                      "on-surface-variant": "#3c4a42",
+                      "on-secondary-fixed-variant": "#3f465c",
+                      "outline-variant": "#bbcabf",
+                      "primary-container": "#10b981",
+                      "surface-container": "#eceef0",
+                      "surface-tint": "#006c49",
+                      "surface-container-highest": "#e0e3e5",
+                      "on-background": "#191c1e",
+                      "surface-variant": "#e0e3e5",
+                      "tertiary-fixed": "#d5e3fd",
+                      "on-tertiary-fixed-variant": "#3a485c",
+                      "inverse-surface": "#2d3133",
+                      "primary-fixed-dim": "#4edea3"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "lg": "24px",
+                      "xs": "4px",
+                      "touch-target": "48px",
+                      "xl": "32px",
+                      "sm": "8px",
+                      "base": "4px",
+                      "margin-mobile": "16px",
+                      "gutter": "16px",
+                      "md": "16px"
+              },
+              "fontFamily": {
+                      "label-md": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "headline-lg-mobile": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "headline-lg": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "headline-sm": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "label-lg": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "body-lg": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "headline-md": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "body-md": [
+                              "Plus Jakarta Sans"
+                      ]
+              },
+              "fontSize": {
+                      "label-md": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-lg": [
+                              "28px",
+                              {
+                                      "lineHeight": "36px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-sm": [
+                              "18px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-lg": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "letterSpacing": "0.02em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "26px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-md": [
+                              "22px",
+                              {
+                                      "lineHeight": "28px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 1;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen flex flex-col font-body-md antialiased md:max-w-md md:mx-auto md:shadow-2xl md:bg-surface-container-lowest">
+<!-- Top App Bar (Transactional - Back Action) -->
+<header class="flex justify-between items-center h-touch-target px-md w-full top-0 sticky bg-surface border-b border-outline-variant z-10">
+<button aria-label="Go back" class="flex items-center justify-center w-touch-target h-touch-target active:scale-95 duration-100 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-full">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="font-headline-md text-headline-md text-primary font-bold">Confirm Delivery</h1>
+<div class="w-touch-target"></div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow p-gutter flex flex-col gap-lg pb-32">
+<!-- Order Context Card -->
+<section class="bg-surface-container-lowest rounded-lg border border-outline-variant p-lg flex flex-col gap-sm">
+<div class="flex justify-between items-start">
+<div>
+<span class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider block mb-base">Order #</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">ORD-8823-X91</h2>
+</div>
+<div class="bg-primary/10 text-primary px-sm py-base rounded font-label-md text-label-md">
+                    AT LOCATION
+                </div>
+</div>
+<div class="mt-sm">
+<span class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider block mb-base">Customer</span>
+<p class="font-body-lg text-body-lg font-semibold text-on-surface">Eleanor Vance</p>
+</div>
+<div class="mt-sm flex items-start gap-sm text-on-surface-variant">
+<span class="material-symbols-outlined mt-base" data-icon="location_on">location_on</span>
+<div>
+<span class="font-label-md text-label-md uppercase tracking-wider block mb-base">Delivery Address</span>
+<p class="font-body-md text-body-md">
+                        1284 Hill House Road<br/>
+                        Apartment 4B, North Tower<br/>
+                        Boston, MA 02116
+                    </p>
+</div>
+</div>
+</section>
+<!-- Items Summary List -->
+<section>
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-sm px-base">Items Summary</h3>
+<ul class="bg-surface-container-lowest rounded-lg border border-outline-variant divide-y divide-outline-variant">
+<li class="p-md flex items-center justify-between min-h-[72px]">
+<div class="flex items-center gap-md">
+<div class="bg-surface-container h-12 w-12 rounded flex items-center justify-center text-on-surface-variant">
+<span class="font-label-lg text-label-lg">x2</span>
+</div>
+<div>
+<p class="font-body-md text-body-md font-semibold">Artisan Sourdough Loaf</p>
+<p class="font-label-md text-label-md text-on-surface-variant">Bakery</p>
+</div>
+</div>
+</li>
+<li class="p-md flex items-center justify-between min-h-[72px]">
+<div class="flex items-center gap-md">
+<div class="bg-surface-container h-12 w-12 rounded flex items-center justify-center text-on-surface-variant">
+<span class="font-label-lg text-label-lg">x1</span>
+</div>
+<div>
+<p class="font-body-md text-body-md font-semibold">Organic Whole Milk</p>
+<p class="font-label-md text-label-md text-on-surface-variant">Dairy - Keep Cold</p>
+</div>
+</div>
+</li>
+</ul>
+</section>
+<!-- Photo Proof (Optional/Contextual) -->
+<section class="bg-surface-container-lowest rounded-lg border border-outline-variant p-md flex flex-col gap-md">
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Proof of Delivery</h3>
+<button class="flex flex-col items-center justify-center h-32 border-2 border-dashed border-outline-variant rounded-lg bg-surface hover:bg-surface-container transition-colors text-on-surface-variant gap-sm w-full">
+<span class="material-symbols-outlined text-[32px]" data-icon="photo_camera">photo_camera</span>
+<span class="font-label-lg text-label-lg">Take Photo (Optional)</span>
+</button>
+</section>
+</main>
+<!-- Fixed Bottom Action Area -->
+<footer class="fixed bottom-0 w-full z-50 bg-surface-container-lowest border-t border-outline-variant p-gutter shadow-[0_-4px_20px_rgba(0,0,0,0.05)] md:max-w-md md:left-1/2 md:-translate-x-1/2 pb-safe">
+<!-- Confirmation Checkbox -->
+<label class="flex items-start gap-md mb-md p-sm rounded hover:bg-surface-container cursor-pointer transition-colors">
+<div class="relative flex items-center mt-1">
+<input class="peer h-6 w-6 cursor-pointer appearance-none rounded border-2 border-outline checked:border-primary checked:bg-primary transition-all" id="confirm-received" type="checkbox"/>
+<span class="material-symbols-outlined absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-on-primary opacity-0 peer-checked:opacity-100 pointer-events-none text-[20px]" data-icon="check">check</span>
+</div>
+<div class="flex flex-col">
+<span class="font-body-lg text-body-lg font-semibold text-on-surface">Customer received order</span>
+<span class="font-body-md text-body-md text-on-surface-variant">I have physically handed the items to the customer or left them at the requested safe location.</span>
+</div>
+</label>
+<!-- Primary Action Button -->
+<button class="w-full h-[56px] rounded bg-primary text-on-primary font-headline-sm text-headline-sm flex items-center justify-center gap-sm transition-all duration-200 active:scale-[0.98] disabled:bg-surface-container-high disabled:text-on-surface-variant disabled:cursor-not-allowed" disabled="" id="submit-btn">
+            Mark as Delivered
+        </button>
+</footer>
+<script>
+        // Micro-interaction for enabling the submit button
+        const checkbox = document.getElementById('confirm-received');
+        const submitBtn = document.getElementById('submit-btn');
+
+        checkbox.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                submitBtn.removeAttribute('disabled');
+                // Optional: Add a subtle haptic-like visual pulse
+                submitBtn.classList.add('shadow-[0_4px_20px_rgba(0,108,73,0.4)]');
+            } else {
+                submitBtn.setAttribute('disabled', 'true');
+                submitBtn.classList.remove('shadow-[0_4px_20px_rgba(0,108,73,0.4)]');
+            }
+        });
+    </script>
+</body></html>

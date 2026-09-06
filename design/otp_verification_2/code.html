@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>LocalDash - OTP Verification</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-tint": "#006c49",
+                        "inverse-surface": "#2b322d",
+                        "on-tertiary": "#ffffff",
+                        "secondary": "#855300",
+                        "primary-fixed-dim": "#4edea3",
+                        "on-background": "#161d19",
+                        "on-secondary-container": "#684000",
+                        "on-primary-container": "#00422b",
+                        "on-error-container": "#93000a",
+                        "on-primary-fixed": "#002113",
+                        "secondary-fixed-dim": "#ffb95f",
+                        "outline": "#6c7a71",
+                        "outline-variant": "#bbcabf",
+                        "surface-container-high": "#e3eae3",
+                        "surface-container": "#e8f0e9",
+                        "inverse-primary": "#4edea3",
+                        "primary": "#006c49",
+                        "on-tertiary-container": "#711419",
+                        "on-surface-variant": "#3c4a42",
+                        "on-secondary-fixed-variant": "#653e00",
+                        "primary-fixed": "#6ffbbe",
+                        "secondary-container": "#fea619",
+                        "surface-container-low": "#eef6ee",
+                        "tertiary-fixed": "#ffdad7",
+                        "surface-container-highest": "#dde4dd",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-fixed": "#410005",
+                        "surface-container-lowest": "#ffffff",
+                        "surface": "#f4fbf4",
+                        "on-primary": "#ffffff",
+                        "secondary-fixed": "#ffddb8",
+                        "background": "#f4fbf4",
+                        "on-surface": "#161d19",
+                        "on-tertiary-fixed-variant": "#842225",
+                        "primary-container": "#10b981",
+                        "inverse-on-surface": "#ebf3eb",
+                        "on-secondary": "#ffffff",
+                        "surface-variant": "#dde4dd",
+                        "tertiary-container": "#fc7c78",
+                        "on-error": "#ffffff",
+                        "error": "#ba1a1a",
+                        "on-primary-fixed-variant": "#005236",
+                        "surface-dim": "#d4dcd5",
+                        "tertiary": "#a43a3a",
+                        "surface-bright": "#f4fbf4",
+                        "on-secondary-fixed": "#2a1700",
+                        "tertiary-fixed-dim": "#ffb3af"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-desktop": "40px",
+                        "md": "16px",
+                        "margin-mobile": "20px",
+                        "xs": "4px",
+                        "unit": "8px",
+                        "sm": "8px",
+                        "lg": "24px",
+                        "xl": "32px",
+                        "gutter": "16px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "label-sm": ["Plus Jakarta Sans"],
+                        "label-lg": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "headline-xl": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "700" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600" }],
+                        "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "500" }],
+                        "headline-xl": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+                        "headline-lg": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+                        "headline-lg-mobile": ["22px", { "lineHeight": "28px", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { -webkit-tap-highlight-color: transparent; }
+        .otp-input:focus { outline: none; box-shadow: 0 0 0 2px #10b981; border-color: transparent; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background h-full flex flex-col items-center justify-center font-body-md">
+<div class="w-full max-w-[480px] h-full sm:h-auto sm:min-h-[600px] bg-surface-container-lowest sm:rounded-3xl sm:shadow-lg flex flex-col relative overflow-hidden">
+<!-- Header -->
+<header class="flex items-center justify-between px-margin-mobile py-md w-full bg-surface-container-lowest z-10">
+<button class="w-11 h-11 flex items-center justify-center rounded-full hover:bg-surface-container-low active:scale-95 transition-all text-on-surface">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<div class="flex-1 text-center">
+<!-- Empty space for balance -->
+</div>
+<div class="w-11 h-11"></div> <!-- Spacer for centering -->
+</header>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col px-margin-mobile pt-lg pb-xl">
+<div class="mb-xl text-center md:text-left">
+<h1 class="font-headline-xl text-headline-xl text-on-surface mb-sm">Verify Mobile Number</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Enter the 4-digit code sent to<br/><span class="font-bold text-on-surface">+91 XXXXX XXXXX</span></p>
+</div>
+<!-- OTP Input -->
+<div class="flex justify-center md:justify-start gap-unit mb-lg">
+<input class="otp-input w-16 h-16 text-center font-headline-lg text-headline-lg bg-surface-container-low border border-outline-variant rounded-DEFAULT text-on-surface transition-all duration-200 focus:bg-surface-container-lowest" maxlength="1" type="tel" value="4"/>
+<input class="otp-input w-16 h-16 text-center font-headline-lg text-headline-lg bg-surface-container-low border border-outline-variant rounded-DEFAULT text-on-surface transition-all duration-200 focus:bg-surface-container-lowest" maxlength="1" type="tel" value="2"/>
+<input class="otp-input w-16 h-16 text-center font-headline-lg text-headline-lg bg-surface-container-low border border-outline-variant rounded-DEFAULT text-on-surface transition-all duration-200 focus:bg-surface-container-lowest" maxlength="1" type="tel"/>
+<input class="otp-input w-16 h-16 text-center font-headline-lg text-headline-lg bg-surface-container-low border border-outline-variant rounded-DEFAULT text-on-surface transition-all duration-200 focus:bg-surface-container-lowest" maxlength="1" type="tel"/>
+</div>
+<!-- Resend / Change -->
+<div class="flex flex-col items-center md:items-start gap-unit mb-xl">
+<p class="font-body-md text-body-md text-on-surface-variant">
+                    Resend code in <span class="font-bold text-primary">00:45</span>
+</p>
+<button class="font-label-lg text-label-lg text-primary hover:text-primary-container active:opacity-70 transition-colors">
+                    Change mobile number
+                </button>
+</div>
+<!-- Spacer to push button to bottom on mobile -->
+<div class="flex-1"></div>
+<!-- Verify Button -->
+<button class="w-full bg-primary-container text-on-primary-container font-label-lg text-label-lg py-4 rounded-full shadow-[0px_8px_24px_rgba(16,185,129,0.15)] hover:bg-primary transition-colors active:scale-95 duration-200 flex justify-center items-center gap-2">
+                Verify &amp; Proceed
+                <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">arrow_forward</span>
+</button>
+</main>
+</div>
+<script>
+        // Simple OTP auto-focus logic for demo purposes
+        const inputs = document.querySelectorAll('.otp-input');
+        inputs.forEach((input, index) => {
+            input.addEventListener('input', (e) => {
+                if (e.target.value.length === 1) {
+                    if (index < inputs.length - 1) {
+                        inputs[index + 1].focus();
+                    }
+                }
+            });
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && e.target.value === '') {
+                    if (index > 0) {
+                        inputs[index - 1].focus();
+                    }
+                }
+            });
+        });
+        
+        // Focus empty input on load
+        const emptyInput = Array.from(inputs).find(input => input.value === '');
+        if(emptyInput) emptyInput.focus();
+    </script>
+</body></html>

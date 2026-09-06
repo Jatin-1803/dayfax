@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Delivery Partner - Deliveries</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-fixed": "#131b2e",
+                        "surface-dim": "#d8dadc",
+                        "surface-container-low": "#f2f4f6",
+                        "on-secondary-container": "#5c647a",
+                        "primary": "#006c49",
+                        "inverse-on-surface": "#eff1f3",
+                        "secondary-container": "#dae2fd",
+                        "primary-fixed": "#6ffbbe",
+                        "on-error": "#ffffff",
+                        "secondary-fixed-dim": "#bec6e0",
+                        "on-primary-fixed": "#002113",
+                        "secondary-fixed": "#dae2fd",
+                        "surface": "#f7f9fb",
+                        "inverse-primary": "#4edea3",
+                        "on-primary-container": "#00422b",
+                        "secondary": "#565e74",
+                        "outline": "#6c7a71",
+                        "on-tertiary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "surface-bright": "#f7f9fb",
+                        "error": "#ba1a1a",
+                        "tertiary": "#515f74",
+                        "tertiary-fixed-dim": "#b9c7e0",
+                        "on-tertiary-fixed": "#0d1c2f",
+                        "background": "#f7f9fb",
+                        "on-primary": "#ffffff",
+                        "tertiary-container": "#95a4bb",
+                        "on-error-container": "#93000a",
+                        "surface-container-high": "#e6e8ea",
+                        "on-primary-fixed-variant": "#005236",
+                        "on-surface": "#191c1e",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary-container": "#2c3a4e",
+                        "on-surface-variant": "#3c4a42",
+                        "on-secondary-fixed-variant": "#3f465c",
+                        "outline-variant": "#bbcabf",
+                        "primary-container": "#10b981",
+                        "surface-container": "#eceef0",
+                        "surface-tint": "#006c49",
+                        "surface-container-highest": "#e0e3e5",
+                        "on-background": "#191c1e",
+                        "surface-variant": "#e0e3e5",
+                        "tertiary-fixed": "#d5e3fd",
+                        "on-tertiary-fixed-variant": "#3a485c",
+                        "inverse-surface": "#2d3133",
+                        "primary-fixed-dim": "#4edea3"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "lg": "24px",
+                        "xs": "4px",
+                        "touch-target": "48px",
+                        "xl": "32px",
+                        "sm": "8px",
+                        "base": "4px",
+                        "margin-mobile": "16px",
+                        "gutter": "16px",
+                        "md": "16px"
+                    },
+                    "fontFamily": {
+                        "label-md": ["Plus Jakarta Sans"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "headline-sm": ["Plus Jakarta Sans"],
+                        "label-lg": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "headline-lg": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-sm": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+                        "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.02em", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "26px", "fontWeight": "400" }],
+                        "headline-md": ["22px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background h-full font-body-md flex flex-col">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-surface-dim w-full top-0 sticky border-b border-outline-variant dark:border-outline z-40">
+<div class="flex justify-between items-center h-touch-target px-md w-full">
+<div class="flex items-center gap-sm active:scale-95 duration-100">
+<div class="w-8 h-8 rounded-full bg-surface-container overflow-hidden flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">person</span>
+</div>
+</div>
+<h1 class="font-headline-md text-headline-md text-primary dark:text-primary-fixed font-bold">Delivery Partner</h1>
+<div class="flex items-center active:scale-95 duration-100">
+<span class="font-label-md text-label-md text-primary px-3 py-1 bg-primary-container/20 rounded-full">ONLINE</span>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 overflow-y-auto pb-[100px] bg-background">
+<!-- Tabs -->
+<div class="sticky top-[48px] bg-surface z-30 flex w-full border-b border-surface-variant">
+<button class="flex-1 py-4 text-center border-b-2 border-primary font-label-lg text-label-lg text-primary bg-primary/5">
+                Active
+            </button>
+<button class="flex-1 py-4 text-center text-on-surface-variant font-label-lg text-label-lg hover:bg-surface-variant/30">
+                Completed
+            </button>
+</div>
+<div class="p-md flex flex-col gap-md">
+<!-- Delivery Card 1: Active - Picked Up -->
+<div class="bg-surface-container-lowest rounded-lg border border-outline-variant p-lg flex flex-col gap-sm shadow-[0px_4px_20px_rgba(15,23,42,0.04)]">
+<div class="flex justify-between items-start mb-1">
+<div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Order #9923</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Sarah Jenkins</p>
+</div>
+<span class="bg-primary/10 text-primary font-label-md text-label-md px-3 py-1 rounded-full border border-primary/20">PICKED UP</span>
+</div>
+<div class="flex items-start gap-sm">
+<span class="material-symbols-outlined text-on-surface-variant mt-1">location_on</span>
+<div>
+<p class="font-body-md text-body-md text-on-surface">1248 Oakwood Ave, Apt 4B</p>
+<p class="font-label-md text-label-md text-on-surface-variant mt-1">2.4 miles away</p>
+</div>
+</div>
+<button class="w-full h-14 bg-primary text-on-primary font-headline-sm text-headline-sm rounded mt-4 active:scale-95 transition-transform duration-100">
+                    View Delivery
+                </button>
+</div>
+<!-- Delivery Card 2: Active - New -->
+<div class="bg-surface-container-lowest rounded-lg border border-outline-variant p-lg flex flex-col gap-sm">
+<div class="flex justify-between items-start mb-1">
+<div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Order #9924</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Michael Chang</p>
+</div>
+<span class="bg-tertiary/10 text-tertiary font-label-md text-label-md px-3 py-1 rounded-full border border-tertiary/20">NEW</span>
+</div>
+<div class="flex items-start gap-sm">
+<span class="material-symbols-outlined text-on-surface-variant mt-1">storefront</span>
+<div>
+<p class="font-body-md text-body-md text-on-surface">Sushi Zen (Pickup)</p>
+<p class="font-label-md text-label-md text-on-surface-variant mt-1">0.8 miles away</p>
+</div>
+</div>
+<button class="w-full h-14 bg-surface-container-high text-on-surface font-headline-sm text-headline-sm rounded mt-4 active:scale-95 transition-transform duration-100 border border-outline-variant">
+                    Accept Order
+                </button>
+</div>
+<!-- Delivery Card 3: Active - On the Way -->
+<div class="bg-surface-container-lowest rounded-lg border border-outline-variant p-lg flex flex-col gap-sm">
+<div class="flex justify-between items-start mb-1">
+<div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Order #9920</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Emily R.</p>
+</div>
+<span class="bg-primary/10 text-primary font-label-md text-label-md px-3 py-1 rounded-full border border-primary/20">ON THE WAY</span>
+</div>
+<div class="flex items-start gap-sm">
+<span class="material-symbols-outlined text-on-surface-variant mt-1">location_on</span>
+<div>
+<p class="font-body-md text-body-md text-on-surface">772 West 5th St, Floor 2</p>
+<p class="font-label-md text-label-md text-on-surface-variant mt-1">1.1 miles away</p>
+</div>
+</div>
+<button class="w-full h-14 bg-primary text-on-primary font-headline-sm text-headline-sm rounded mt-4 active:scale-95 transition-transform duration-100">
+                    View Navigation
+                </button>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="bg-surface dark:bg-surface-dim fixed bottom-0 w-full z-50 h-[80px] shadow-lg md:hidden">
+<div class="flex justify-around items-center w-full px-md pb-safe h-full">
+<a class="flex flex-col items-center justify-center text-on-secondary-container dark:text-secondary-fixed-dim hover:bg-surface-container dark:hover:bg-on-secondary-fixed-variant active:scale-90 transition-transform duration-200 p-2 rounded-lg" href="#">
+<span class="material-symbols-outlined mb-1">home</span>
+<span class="font-label-md text-label-md">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-primary-container dark:bg-on-primary-fixed-variant text-on-primary-container dark:text-primary-fixed rounded-full px-lg py-1 active:scale-90 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined mb-1">local_shipping</span>
+<span class="font-label-md text-label-md">Deliveries</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-secondary-container dark:text-secondary-fixed-dim hover:bg-surface-container dark:hover:bg-on-secondary-fixed-variant active:scale-90 transition-transform duration-200 p-2 rounded-lg" href="#">
+<span class="material-symbols-outlined mb-1">history</span>
+<span class="font-label-md text-label-md">History</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-secondary-container dark:text-secondary-fixed-dim hover:bg-surface-container dark:hover:bg-on-secondary-fixed-variant active:scale-90 transition-transform duration-200 p-2 rounded-lg" href="#">
+<span class="material-symbols-outlined mb-1">person</span>
+<span class="font-label-md text-label-md">Profile</span>
+</a>
+</div>
+</nav>
+</body></html>

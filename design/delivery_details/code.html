@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Delivery Details</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-fixed": "#131b2e",
+                        "surface-dim": "#d8dadc",
+                        "surface-container-low": "#f2f4f6",
+                        "on-secondary-container": "#5c647a",
+                        "primary": "#006c49",
+                        "inverse-on-surface": "#eff1f3",
+                        "secondary-container": "#dae2fd",
+                        "primary-fixed": "#6ffbbe",
+                        "on-error": "#ffffff",
+                        "secondary-fixed-dim": "#bec6e0",
+                        "on-primary-fixed": "#002113",
+                        "secondary-fixed": "#dae2fd",
+                        "surface": "#f7f9fb",
+                        "inverse-primary": "#4edea3",
+                        "on-primary-container": "#00422b",
+                        "secondary": "#565e74",
+                        "outline": "#6c7a71",
+                        "on-tertiary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "surface-bright": "#f7f9fb",
+                        "error": "#ba1a1a",
+                        "tertiary": "#515f74",
+                        "tertiary-fixed-dim": "#b9c7e0",
+                        "on-tertiary-fixed": "#0d1c2f",
+                        "background": "#f7f9fb",
+                        "on-primary": "#ffffff",
+                        "tertiary-container": "#95a4bb",
+                        "on-error-container": "#93000a",
+                        "surface-container-high": "#e6e8ea",
+                        "on-primary-fixed-variant": "#005236",
+                        "on-surface": "#191c1e",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary-container": "#2c3a4e",
+                        "on-surface-variant": "#3c4a42",
+                        "on-secondary-fixed-variant": "#3f465c",
+                        "outline-variant": "#bbcabf",
+                        "primary-container": "#10b981",
+                        "surface-container": "#eceef0",
+                        "surface-tint": "#006c49",
+                        "surface-container-highest": "#e0e3e5",
+                        "on-background": "#191c1e",
+                        "surface-variant": "#e0e3e5",
+                        "tertiary-fixed": "#d5e3fd",
+                        "on-tertiary-fixed-variant": "#3a485c",
+                        "inverse-surface": "#2d3133",
+                        "primary-fixed-dim": "#4edea3"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "lg": "24px",
+                        "xs": "4px",
+                        "touch-target": "48px",
+                        "xl": "32px",
+                        "sm": "8px",
+                        "base": "4px",
+                        "margin-mobile": "16px",
+                        "gutter": "16px",
+                        "md": "16px"
+                    },
+                    "fontFamily": {
+                        "label-md": ["Plus Jakarta Sans"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "headline-sm": ["Plus Jakarta Sans"],
+                        "label-lg": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "headline-lg": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-sm": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+                        "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.02em", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "26px", "fontWeight": "400" }],
+                        "headline-md": ["22px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen pb-32">
+<!-- Top App Bar -->
+<header class="bg-surface dark:bg-surface-dim font-headline-sm text-headline-sm w-full top-0 sticky border-b border-outline-variant dark:border-outline flat no shadows flex justify-between items-center h-touch-target px-md z-40">
+<div class="flex items-center gap-2">
+<button class="w-touch-target h-touch-target flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-full active:scale-95 duration-100">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="font-headline-md text-headline-md text-primary dark:text-primary-fixed font-bold">Delivery #1024</h1>
+</div>
+<div class="flex items-center">
+<span class="bg-error-container text-on-error-container font-label-md text-label-md px-3 py-1 rounded-full flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="warning">warning</span> PENDING
+            </span>
+</div>
+</header>
+<!-- Main Content -->
+<main class="p-gutter md:p-lg max-w-3xl mx-auto flex flex-col gap-md">
+<!-- Customer Card -->
+<section class="bg-surface-container-lowest rounded-xl border border-outline-variant p-lg shadow-sm">
+<div class="flex justify-between items-start mb-4">
+<div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Amit Sharma</h2>
+<p class="font-body-md text-body-md text-on-surface-variant flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined text-[16px]" data-icon="phone">phone</span> +91 98765 43210
+                    </p>
+</div>
+<div class="h-12 w-12 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container font-headline-sm text-headline-sm">
+                    AS
+                </div>
+</div>
+<div class="flex gap-sm">
+<button class="flex-1 bg-surface-container hover:bg-surface-container-high text-on-surface font-label-lg text-label-lg h-touch-target rounded-lg flex justify-center items-center gap-2 transition-colors">
+<span class="material-symbols-outlined" data-icon="call">call</span> Call
+                </button>
+<button class="flex-1 bg-surface-container hover:bg-surface-container-high text-on-surface font-label-lg text-label-lg h-touch-target rounded-lg flex justify-center items-center gap-2 transition-colors">
+<span class="material-symbols-outlined" data-icon="chat">chat</span> Message
+                </button>
+</div>
+</section>
+<!-- Address Card -->
+<section class="bg-surface-container-lowest rounded-xl border border-outline-variant p-lg shadow-sm">
+<h3 class="font-label-lg text-label-lg text-on-surface-variant mb-2 uppercase">Delivery Address</h3>
+<p class="font-body-lg text-body-lg text-on-surface font-bold mb-1">Apt 4B, Sunshine Towers</p>
+<p class="font-body-md text-body-md text-on-surface-variant mb-4">123 MG Road, Indiranagar, Bangalore, 560038</p>
+<div class="w-full h-32 rounded-lg bg-surface-container-high mb-4 overflow-hidden relative border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="A top-down view of a modern city map showing a clear route with a green primary marker on a clean white background. High contrast, utility focused." data-location="Bangalore" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDF4jlE4Q5S8TWMw_lTB-9Pd1Wmg7B7pj2NBj9Zw-efm26eq6xXwkTva7Hn3uLmZgG4UfE3D0wbWz49Q_kyancvL71M007Cg1zts580YlSSESXbd-TGFgDe4JUJjYgUjXAyldoks_p0eEYik6totXZmF2as0XPz2kcjTfwgsc4PUad5pEm9EK-3WSydryLlZftIIiRqvk6neIDo7xADPlDJA4Iehup4CbaTMmNnchgriVOdkJtOrcYG"/>
+</div>
+<button class="w-full bg-primary hover:bg-primary-container text-on-primary font-headline-sm text-headline-sm h-[56px] rounded-lg flex justify-center items-center gap-2 transition-colors shadow-md">
+<span class="material-symbols-outlined" data-icon="navigation">navigation</span> Navigate
+            </button>
+</section>
+<!-- Order Info Card -->
+<section class="bg-surface-container-lowest rounded-xl border border-outline-variant p-lg shadow-sm mb-xl">
+<div class="flex justify-between items-center mb-4 border-b border-outline-variant pb-2">
+<h3 class="font-label-lg text-label-lg text-on-surface-variant uppercase">Order Items</h3>
+<span class="font-label-md text-label-md text-on-surface bg-surface-container px-2 py-1 rounded">3 Items</span>
+</div>
+<ul class="flex flex-col gap-3">
+<li class="flex justify-between items-center py-2">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-surface-container rounded flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+</div>
+<span class="font-body-md text-body-md text-on-surface">Whole Wheat Bread</span>
+</div>
+<span class="font-label-lg text-label-lg text-on-surface font-bold">x1</span>
+</li>
+<li class="flex justify-between items-center py-2">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-surface-container rounded flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="local_drink">local_drink</span>
+</div>
+<span class="font-body-md text-body-md text-on-surface">Full Cream Milk (1L)</span>
+</div>
+<span class="font-label-lg text-label-lg text-on-surface font-bold">x2</span>
+</li>
+</ul>
+</section>
+</main>
+<!-- Bottom Action Bar (Fixed) -->
+<div class="fixed bottom-0 w-full bg-surface border-t border-outline-variant p-gutter pb-safe z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+<button class="w-full bg-primary hover:bg-primary-container text-on-primary font-headline-sm text-headline-sm h-[56px] rounded-lg flex justify-center items-center gap-2 transition-colors shadow-lg active:scale-95 duration-200">
+<span class="material-symbols-outlined" data-icon="check_circle" data-weight="fill" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+            Confirm Pickup
+        </button>
+</div>
+</body></html>
