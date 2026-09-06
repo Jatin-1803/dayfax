@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Dailyfax quick-commerce REST API",
+  "description": "DayFax quick-commerce REST API",
   "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
@@ -12,9 +12,15 @@
     "migrate": "tsx src/common/database/migrate.ts",
     "migrate:down": "tsx src/common/database/migrate.ts down",
     "seed": "tsx src/common/database/seed.ts",
+    "seed:catalog": "tsx src/common/database/seed-catalog.ts",
+    "seed:i18n": "tsx src/common/database/seed-i18n.ts",
+    "search:reindex": "tsx src/scripts/search-reindex.ts",
+    "reclaim:unpaid": "tsx src/scripts/reclaim-unpaid-orders.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "tsc -p tsconfig.json --noEmit"
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "load-test": "node scripts/load-test.mjs",
+    "load-test:ladder": "node scripts/load-test-ladder.mjs"
   },
   "engines": {
     "node": ">=20"
@@ -28,6 +34,7 @@
     "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.3",
     "morgan": "^1.12.0",
+    "multer": "^2.3.0",
     "mysql2": "^3.24.3",
     "uuid": "^14.0.2",
     "winston": "^3.19.0",
@@ -39,6 +46,7 @@
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/morgan": "^1.9.10",
+    "@types/multer": "^2.2.0",
     "@types/node": "^26.4.1",
     "@types/supertest": "^7.2.1",
     "@types/uuid": "^10.0.0",

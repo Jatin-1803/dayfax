@@ -4,6 +4,19 @@ import { logger } from '../logger/logger.js';
 
 let pool: mysql.Pool | null = null;
 
+const DEADLOCK_CODES = new Set([1213, 1205]); // ER_LOCK_DEADLOCK, ER_LOCK_WAIT_TIMEOUT
+
+function isTransientLockError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const errno = (error as { errno?: number }).errno;
+  const code = (error as { code?: string }).code;
+  return (
+    (typeof errno === 'number' && DEADLOCK_CODES.has(errno)) ||
+    code === 'ER_LOCK_DEADLOCK' ||
+    code === 'ER_LOCK_WAIT_TIMEOUT'
+  );
+}
+
 export function getPool(): mysql.Pool {
   if (!pool) {
     pool = mysql.createPool({
@@ -13,30 +26,68 @@ export function getPool(): mysql.Pool {
       password: env.DB_PASSWORD,
       database: env.DB_NAME,
       waitForConnections: true,
-      connectionLimit: 10,
+      connectionLimit: env.DB_CONNECTION_LIMIT,
+      queueLimit: env.DB_QUEUE_LIMIT,
+      connectTimeout: env.DB_CONNECT_TIMEOUT_MS,
+      enableKeepAlive: true,
+      keepAliveInitialDelay: 10_000,
       namedPlaceholders: true,
       timezone: 'Z',
       dateStrings: false,
     });
-    logger.info('MySQL pool created', { host: env.DB_HOST, database: env.DB_NAME });
+    logger.info('MySQL pool created', {
+      host: env.DB_HOST,
+      database: env.DB_NAME,
+      connectionLimit: env.DB_CONNECTION_LIMIT,
+      queueLimit: env.DB_QUEUE_LIMIT,
+    });
   }
   return pool;
 }
 
+/**
+ * Runs work in a short DB transaction on a single pooled connection.
+ * Retries only the transaction on MySQL deadlock / lock-wait timeout.
+ */
 export async function withTransaction<T>(
   work: (conn: mysql.PoolConnection) => Promise<T>,
+  options: { maxRetries?: number } = {},
 ): Promise<T> {
-  const connection = await getPool().getConnection();
-  try {
-    await connection.beginTransaction();
-    const result = await work(connection);
-    await connection.commit();
-    return result;
-  } catch (error) {
-    await connection.rollback();
-    throw error;
-  } finally {
-    connection.release();
+  const maxRetries = options.maxRetries ?? 3;
+  let attempt = 0;
+
+  while (true) {
+    attempt += 1;
+    const connection = await getPool().getConnection();
+    try {
+      await connection.beginTransaction();
+      const result = await work(connection);
+      await connection.commit();
+      return result;
+    } catch (error) {
+      try {
+        await connection.rollback();
+      } catch (rollbackError) {
+        logger.warn('Transaction rollback failed', {
+          error: rollbackError instanceof Error ? rollbackError.message : String(rollbackError),
+        });
+      }
+
+      if (attempt <= maxRetries && isTransientLockError(error)) {
+        const delayMs = 25 * attempt * attempt;
+        logger.warn('Retrying transaction after lock contention', {
+          attempt,
+          delayMs,
+          errno: (error as { errno?: number }).errno,
+          code: (error as { code?: string }).code,
+        });
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+        continue;
+      }
+      throw error;
+    } finally {
+      connection.release();
+    }
   }
 }
 

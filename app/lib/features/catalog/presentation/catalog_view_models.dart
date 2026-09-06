@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/errors/app_failure.dart';
+import '../../../core/i18n/i18n_providers.dart';
 import '../data/catalog_repository.dart';
 import '../domain/catalog_models.dart';
 
@@ -17,11 +18,17 @@ class CatalogLoading extends CatalogUiState {
 class CatalogReady extends CatalogUiState {
   const CatalogReady({
     required this.categories,
-    required this.products,
+    required this.popular,
+    required this.grocery,
+    required this.vegetables,
+    required this.cosmetics,
   });
 
   final List<CatalogCategory> categories;
-  final List<CatalogProduct> products;
+  final List<CatalogProduct> popular;
+  final List<CatalogProduct> grocery;
+  final List<CatalogProduct> vegetables;
+  final List<CatalogProduct> cosmetics;
 }
 
 class CatalogError extends CatalogUiState {
@@ -33,23 +40,56 @@ class CatalogError extends CatalogUiState {
 class HomeCatalogViewModel extends Notifier<CatalogUiState> {
   @override
   CatalogUiState build() {
+    ref.listen(appLangCodeProvider, (previous, next) {
+      if (previous != null && previous != next) {
+        load();
+      }
+    });
     Future.microtask(load);
     return const CatalogLoading();
   }
 
   CatalogRepository get _repo => ref.read(catalogRepositoryProvider);
+  String get _lang => ref.read(appLangCodeProvider);
 
   Future<void> load() async {
     state = const CatalogLoading();
     try {
-      final categories = await _repo.listCategories();
-      final page = await _repo.listProducts(page: 1, limit: 12);
+      final lang = _lang;
+      final results = await Future.wait([
+        _repo.listCategories(lang: lang),
+        _repo.listProducts(page: 1, limit: 16, lang: lang),
+        _productsForSlug('grocery', lang: lang),
+        _productsForSlug('vegetables', lang: lang),
+        _productsForSlug('cosmetics', lang: lang),
+      ]);
       state = CatalogReady(
-        categories: categories,
-        products: page.items,
+        categories: results[0] as List<CatalogCategory>,
+        popular: (results[1] as ProductPage).items,
+        grocery: results[2] as List<CatalogProduct>,
+        vegetables: results[3] as List<CatalogProduct>,
+        cosmetics: results[4] as List<CatalogProduct>,
       );
     } on AppFailure catch (failure) {
       state = CatalogError(failure.message);
+    }
+  }
+
+  /// Missing category rails must not fail the whole home screen.
+  Future<List<CatalogProduct>> _productsForSlug(
+    String categorySlug, {
+    required String lang,
+  }) async {
+    try {
+      final page = await _repo.listProducts(
+        page: 1,
+        limit: 12,
+        categorySlug: categorySlug,
+        lang: lang,
+      );
+      return page.items;
+    } on NotFoundFailure {
+      return const [];
     }
   }
 }
@@ -60,6 +100,11 @@ final homeCatalogViewModelProvider =
 class CategoriesListViewModel extends Notifier<AsyncValue<List<CatalogCategory>>> {
   @override
   AsyncValue<List<CatalogCategory>> build() {
+    ref.listen(appLangCodeProvider, (previous, next) {
+      if (previous != null && previous != next) {
+        load();
+      }
+    });
     Future.microtask(load);
     return const AsyncValue.loading();
   }
@@ -67,7 +112,9 @@ class CategoriesListViewModel extends Notifier<AsyncValue<List<CatalogCategory>>
   Future<void> load() async {
     state = const AsyncValue.loading();
     try {
-      final categories = await ref.read(catalogRepositoryProvider).listCategories();
+      final categories = await ref
+          .read(catalogRepositoryProvider)
+          .listCategories(lang: ref.read(appLangCodeProvider));
       state = AsyncValue.data(categories);
     } on AppFailure catch (failure) {
       state = AsyncValue.error(failure, StackTrace.current);
@@ -90,6 +137,7 @@ class ProductListState {
     this.query = '',
     this.categorySlug,
     this.title,
+    this.rewrittenFor,
   });
 
   final List<CatalogProduct> items;
@@ -100,6 +148,7 @@ class ProductListState {
   final String query;
   final String? categorySlug;
   final String? title;
+  final String? rewrittenFor;
 
   bool get hasMore => pagination?.hasNextPage ?? false;
 
@@ -113,6 +162,8 @@ class ProductListState {
     String? query,
     String? categorySlug,
     String? title,
+    String? rewrittenFor,
+    bool clearRewrittenFor = false,
   }) {
     return ProductListState(
       items: items ?? this.items,
@@ -123,6 +174,7 @@ class ProductListState {
       query: query ?? this.query,
       categorySlug: categorySlug ?? this.categorySlug,
       title: title ?? this.title,
+      rewrittenFor: clearRewrittenFor ? null : (rewrittenFor ?? this.rewrittenFor),
     );
   }
 }
@@ -130,6 +182,11 @@ class ProductListState {
 class CategoryProductsViewModel extends FamilyNotifier<ProductListState, String> {
   @override
   ProductListState build(String arg) {
+    ref.listen(appLangCodeProvider, (previous, next) {
+      if (previous != null && previous != next) {
+        load(reset: true);
+      }
+    });
     Future.microtask(() => load(reset: true));
     return ProductListState(categorySlug: arg, isLoading: true);
   }
@@ -138,6 +195,7 @@ class CategoryProductsViewModel extends FamilyNotifier<ProductListState, String>
     final slug = arg;
     final nextPage = reset ? 1 : (state.pagination?.page ?? 0) + 1;
     if (!reset && !state.hasMore) return;
+    final lang = ref.read(appLangCodeProvider);
 
     state = state.copyWith(
       isLoading: reset,
@@ -146,11 +204,13 @@ class CategoryProductsViewModel extends FamilyNotifier<ProductListState, String>
     );
 
     try {
-      final category = await ref.read(catalogRepositoryProvider).getCategory(slug);
+      final category =
+          await ref.read(catalogRepositoryProvider).getCategory(slug, lang: lang);
       final page = await ref.read(catalogRepositoryProvider).listProducts(
             page: nextPage,
             limit: 20,
             categorySlug: slug,
+            lang: lang,
           );
       state = state.copyWith(
         title: category.name,
@@ -176,6 +236,11 @@ final categoryProductsViewModelProvider = NotifierProvider.family<
 class ProductDetailViewModel extends FamilyNotifier<AsyncValue<CatalogProductDetail>, String> {
   @override
   AsyncValue<CatalogProductDetail> build(String arg) {
+    ref.listen(appLangCodeProvider, (previous, next) {
+      if (previous != null && previous != next) {
+        load();
+      }
+    });
     Future.microtask(load);
     return const AsyncValue.loading();
   }
@@ -183,7 +248,9 @@ class ProductDetailViewModel extends FamilyNotifier<AsyncValue<CatalogProductDet
   Future<void> load() async {
     state = const AsyncValue.loading();
     try {
-      final product = await ref.read(catalogRepositoryProvider).getProduct(arg);
+      final product = await ref
+          .read(catalogRepositoryProvider)
+          .getProduct(arg, lang: ref.read(appLangCodeProvider));
       state = AsyncValue.data(product);
     } on AppFailure catch (failure) {
       state = AsyncValue.error(failure, StackTrace.current);
@@ -196,12 +263,48 @@ final productDetailViewModelProvider = NotifierProvider.family<
   ProductDetailViewModel.new,
 );
 
+class SimilarProductsViewModel extends FamilyNotifier<AsyncValue<List<CatalogProduct>>, String> {
+  @override
+  AsyncValue<List<CatalogProduct>> build(String arg) {
+    ref.listen(appLangCodeProvider, (previous, next) {
+      if (previous != null && previous != next) {
+        load();
+      }
+    });
+    Future.microtask(load);
+    return const AsyncValue.loading();
+  }
+
+  Future<void> load() async {
+    state = const AsyncValue.loading();
+    try {
+      final items = await ref.read(catalogRepositoryProvider).listSimilarProducts(
+            arg,
+            lang: ref.read(appLangCodeProvider),
+          );
+      state = AsyncValue.data(items);
+    } on AppFailure catch (failure) {
+      state = AsyncValue.error(failure, StackTrace.current);
+    }
+  }
+}
+
+final similarProductsViewModelProvider = NotifierProvider.family<
+    SimilarProductsViewModel, AsyncValue<List<CatalogProduct>>, String>(
+  SimilarProductsViewModel.new,
+);
+
 class SearchViewModel extends Notifier<ProductListState> {
   Timer? _debounce;
 
   @override
   ProductListState build() {
     ref.onDispose(() => _debounce?.cancel());
+    ref.listen(appLangCodeProvider, (previous, next) {
+      if (previous != null && previous != next && state.query.trim().isNotEmpty) {
+        search(reset: true);
+      }
+    });
     return const ProductListState();
   }
 
@@ -240,6 +343,7 @@ class SearchViewModel extends Notifier<ProductListState> {
             page: nextPage,
             limit: 20,
             q: query,
+            lang: ref.read(appLangCodeProvider),
           );
       state = state.copyWith(
         items: reset ? page.items : [...state.items, ...page.items],
@@ -248,6 +352,8 @@ class SearchViewModel extends Notifier<ProductListState> {
         isLoadingMore: false,
         clearError: true,
         query: query,
+        rewrittenFor: reset ? page.rewrittenFor : state.rewrittenFor,
+        clearRewrittenFor: reset && page.rewrittenFor == null,
       );
     } on AppFailure catch (failure) {
       state = state.copyWith(

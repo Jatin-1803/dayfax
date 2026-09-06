@@ -5,10 +5,12 @@ import {
   UnauthorizedError,
   ValidationError,
 } from '../../common/errors/app-error.js';
+import { withTransaction } from '../../common/database/pool.js';
 import { logger } from '../../common/logger/logger.js';
 import type { RoleCode } from '../../common/middleware/auth.js';
 import { AuthRepository } from './auth.repository.js';
 import type { RequestOtpInput, VerifyOtpInput } from './auth.schema.js';
+import type { PoolConnection } from 'mysql2/promise';
 
 function parseExpiryToDate(expiresIn: string): Date {
   const match = /^(\d+)([smhd])$/.exec(expiresIn);
@@ -120,29 +122,34 @@ export class AuthService {
   }
 
   async refresh(refreshToken: string) {
-    const stored = await this.repo.findValidRefreshToken(refreshToken);
-    if (!stored) {
-      throw new UnauthorizedError('Invalid refresh token');
-    }
+    return withTransaction(async (conn) => {
+      const stored = await this.repo.findValidRefreshToken(refreshToken, conn);
+      if (!stored) {
+        throw new UnauthorizedError('Invalid refresh token');
+      }
 
-    const user = await this.repo.findUserById(stored.user_id);
-    if (!user || user.status !== 'ACTIVE') {
-      throw new UnauthorizedError('User not available');
-    }
+      const user = await this.repo.findUserById(stored.user_id);
+      if (!user || user.status !== 'ACTIVE') {
+        throw new UnauthorizedError('User not available');
+      }
 
-    const roles = await this.repo.getUserRoles(user.id);
-    await this.repo.revokeRefreshToken(stored.id);
+      const roles = await this.repo.getUserRoles(user.id);
+      await this.repo.revokeRefreshToken(stored.id, conn);
 
-    const tokens = await this.issueTokens({
-      userId: user.id,
-      phone: user.phone,
-      roles,
+      const tokens = await this.issueTokens(
+        {
+          userId: user.id,
+          phone: user.phone,
+          roles,
+        },
+        conn,
+      );
+
+      return {
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+      };
     });
-
-    return {
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken,
-    };
   }
 
   async me(userId: string) {
@@ -162,17 +169,21 @@ export class AuthService {
     };
   }
 
-  private async issueTokens(input: {
-    userId: string;
-    phone: string;
-    roles: RoleCode[];
-  }) {
+  private async issueTokens(
+    input: {
+      userId: string;
+      phone: string;
+      roles: RoleCode[];
+    },
+    conn?: PoolConnection,
+  ) {
     const accessToken = jwt.sign(
       {
         sub: input.userId,
         phone: input.phone,
         roles: input.roles,
         type: 'access',
+        principal: 'user',
       },
       env.JWT_ACCESS_SECRET,
       { expiresIn: env.JWT_ACCESS_EXPIRES_IN as jwt.SignOptions['expiresIn'] },
@@ -182,6 +193,7 @@ export class AuthService {
       {
         sub: input.userId,
         type: 'refresh',
+        principal: 'user',
       },
       env.JWT_REFRESH_SECRET,
       { expiresIn: env.JWT_REFRESH_EXPIRES_IN as jwt.SignOptions['expiresIn'] },
@@ -191,6 +203,7 @@ export class AuthService {
       input.userId,
       refreshToken,
       parseExpiryToDate(env.JWT_REFRESH_EXPIRES_IN),
+      conn,
     );
 
     return { accessToken, refreshToken };

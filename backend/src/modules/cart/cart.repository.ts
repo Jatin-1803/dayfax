@@ -182,10 +182,15 @@ export class CartRepository {
     await conn.query(`DELETE FROM cart_items WHERE cart_id = ?`, [cartId]);
   }
 
-  async resolveSellableVariant(options: {
-    variantId: string;
-    storeId?: string;
-  }): Promise<SellableVariant | null> {
+  async resolveSellableVariant(
+    options: {
+      variantId: string;
+      storeId?: string;
+      /** Lock inventory row for the duration of the caller's transaction. */
+      forUpdate?: boolean;
+    },
+    conn: Pool | PoolConnection = this.db,
+  ): Promise<SellableVariant | null> {
     const params: unknown[] = [options.variantId];
     let storeClause = '';
     if (options.storeId) {
@@ -193,7 +198,10 @@ export class CartRepository {
       params.push(options.storeId);
     }
 
-    const [rows] = await this.db.query<RowDataPacket[]>(
+    const lockClause = options.forUpdate ? ' FOR UPDATE' : '';
+    const inventoryJoin = options.forUpdate ? 'INNER JOIN' : 'LEFT JOIN';
+
+    const [rows] = await conn.query<RowDataPacket[]>(
       `SELECT
           pv.id AS variant_id,
           p.id AS product_id,
@@ -209,7 +217,7 @@ export class CartRepository {
        INNER JOIN products p ON p.id = pv.product_id
        INNER JOIN store_products sp ON sp.product_id = p.id
        INNER JOIN stores s ON s.id = sp.store_id
-       LEFT JOIN inventory inv
+       ${inventoryJoin} inventory inv
          ON inv.store_id = s.id
         AND inv.variant_id = pv.id
        WHERE pv.id = ?
@@ -219,7 +227,7 @@ export class CartRepository {
          AND s.is_active = 1
          ${storeClause}
        ORDER BY sp.is_available DESC, s.created_at ASC
-       LIMIT 1`,
+       LIMIT 1${lockClause}`,
       params,
     );
     return (rows[0] as SellableVariant) ?? null;

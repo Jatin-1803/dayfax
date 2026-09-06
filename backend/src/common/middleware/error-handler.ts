@@ -1,8 +1,14 @@
 import type { NextFunction, Request, Response } from 'express';
 import { ZodError } from 'zod';
-import { AppError, ValidationError } from '../errors/app-error.js';
+import { AppError, ServiceUnavailableError, ValidationError } from '../errors/app-error.js';
 import { logger } from '../logger/logger.js';
 import { env } from '../../config/env.js';
+
+function isPoolQueueError(err: unknown): boolean {
+  if (!err || typeof err !== 'object') return false;
+  const message = err instanceof Error ? err.message : String(err);
+  return message.includes('Queue limit reached');
+}
 
 export function notFoundHandler(_req: Request, res: Response): void {
   res.status(404).json({
@@ -14,39 +20,51 @@ export function notFoundHandler(_req: Request, res: Response): void {
 
 export function errorHandler(
   err: unknown,
-  _req: Request,
+  req: Request,
   res: Response,
   _next: NextFunction,
 ): void {
-  if (err instanceof ZodError) {
-    const validation = new ValidationError('Validation failed', err.flatten());
+  const requestId = req.requestId;
+  const normalized = isPoolQueueError(err)
+    ? new ServiceUnavailableError('Database is busy. Please retry shortly.')
+    : err;
+
+  if (normalized instanceof ZodError) {
+    const validation = new ValidationError('Validation failed', normalized.flatten());
     res.status(validation.statusCode).json({
       success: false,
       message: validation.message,
-      error: { code: validation.code, details: validation.details },
+      error: { code: validation.code, details: validation.details, requestId },
     });
     return;
   }
 
-  if (err instanceof AppError) {
-    if (!err.isOperational || err.statusCode >= 500) {
-      logger.error(err.message, { code: err.code, stack: err.stack });
+  if (normalized instanceof AppError) {
+    if (!normalized.isOperational || normalized.statusCode >= 500) {
+      logger.error(normalized.message, {
+        code: normalized.code,
+        stack: normalized.stack,
+        requestId,
+      });
     } else {
-      logger.warn(err.message, { code: err.code });
+      logger.warn(normalized.message, { code: normalized.code, requestId });
     }
 
     const message =
-      err.statusCode >= 500 && env.NODE_ENV === 'production'
+      normalized.statusCode >= 500 &&
+      normalized.statusCode !== 503 &&
+      env.NODE_ENV === 'production'
         ? 'Something went wrong. Please try again.'
-        : err.message;
+        : normalized.message;
 
-    res.status(err.statusCode).json({
+    res.status(normalized.statusCode).json({
       success: false,
       message,
       error: {
-        code: err.code,
-        ...(err.details !== undefined && env.NODE_ENV !== 'production'
-          ? { details: err.details }
+        code: normalized.code,
+        requestId,
+        ...(normalized.details !== undefined && env.NODE_ENV !== 'production'
+          ? { details: normalized.details }
           : {}),
       },
     });
@@ -54,13 +72,14 @@ export function errorHandler(
   }
 
   logger.error('Unhandled error', {
-    error: err instanceof Error ? err.message : String(err),
-    stack: err instanceof Error ? err.stack : undefined,
+    requestId,
+    error: normalized instanceof Error ? normalized.message : String(normalized),
+    stack: normalized instanceof Error ? normalized.stack : undefined,
   });
 
   res.status(500).json({
     success: false,
     message: 'Something went wrong. Please try again.',
-    error: { code: 'INTERNAL_ERROR' },
+    error: { code: 'INTERNAL_ERROR', requestId },
   });
 }
