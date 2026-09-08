@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DayFax Admin</title>
+  <style>
+    :root {
+      --bg: #f3f5f2;
+      --card: #ffffff;
+      --ink: #1a211c;
+      --muted: #5c6b61;
+      --accent: #1f6b4a;
+      --line: #d5ddd7;
+      --radius: 12px;
+      --font: "Segoe UI", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      background:
+        radial-gradient(circle at top left, #e4efe7, transparent 40%),
+        linear-gradient(180deg, #eef2ea, var(--bg));
+      color: var(--ink);
+      min-height: 100vh;
+    }
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 2.5rem 1.25rem;
+    }
+    h1 { margin: 0 0 0.35rem; }
+    p { color: var(--muted); }
+    .grid {
+      display: grid;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    a.card {
+      display: block;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 1.1rem 1.2rem;
+      text-decoration: none;
+      color: inherit;
+    }
+    a.card strong { color: var(--accent); font-size: 1.1rem; }
+    a.card span { display: block; margin-top: 0.35rem; color: var(--muted); font-size: 0.95rem; }
+    code { background: #e8eee9; padding: 0.1rem 0.35rem; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>DayFax Admin</h1>
+    <p>
+      The full admin console is the Vite React app in <code>admin/</code>
+      (email/password login). Run <code>cd admin && npm run dev</code> →
+      <a href="http://127.0.0.1:5173">http://127.0.0.1:5173</a>.
+    </p>
+    <p>Default seeded credentials (see <code>SEED_ADMIN_EMAIL</code>): <code>admin@dayfax.in</code></p>
+    <p>Legacy static tools (fallback only):</p>
+    <div class="grid">
+      <a class="card" href="/admin/shops/">
+        <strong>Shops &amp; items (legacy)</strong>
+        <span>Prefer the new Admin → Stores page.</span>
+      </a>
+      <a class="card" href="/admin/search/">
+        <strong>Search admin (legacy)</strong>
+        <span>Prefer the new Admin → Search page.</span>
+      </a>
+    </div>
+  </main>
+</body>
+</html>

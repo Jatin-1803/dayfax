@@ -24,9 +24,8 @@ class AuthUser extends Equatable {
 
   /// Prefer delivery partner when dual-role (ops accounts); otherwise customer.
   String? get primaryAppRole {
-    if (isDeliveryPartner && !isCustomer) return 'DELIVERY_PARTNER';
-    if (isCustomer) return 'CUSTOMER';
     if (isDeliveryPartner) return 'DELIVERY_PARTNER';
+    if (isCustomer) return 'CUSTOMER';
     return null;
   }
 

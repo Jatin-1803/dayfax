@@ -1,5 +1,6 @@
 import { ConflictError, NotFoundError, ValidationError } from '../../common/errors/app-error.js';
 import { withTransaction } from '../../common/database/pool.js';
+import { toPublicAssetUrl } from '../../common/utils/public-url.js';
 import { CartRepository } from './cart.repository.js';
 import type { AddCartItemInput, UpdateCartItemInput } from './cart.schema.js';
 import type { CartItemRow, CartRow } from './cart.repository.js';
@@ -17,7 +18,7 @@ function mapItem(row: CartItemRow) {
       id: row.product_id,
       name: row.product_name,
       slug: row.product_slug,
-      imageUrl: row.product_image_url,
+      imageUrl: toPublicAssetUrl(row.product_image_url),
     },
     unitLabel: row.unit_label,
     mrpPaise: row.mrp_paise,

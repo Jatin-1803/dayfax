@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { listProductsSchema } from './products.schema.js';
+import { listProductsSchema, similarProductsSchema } from './products.schema.js';
 import { paginatedMeta, parsePagination } from '../../common/utils/pagination.js';
 
 describe('products schema', () => {
@@ -18,6 +18,19 @@ describe('products schema', () => {
 
   it('rejects limit over max', () => {
     expect(() => listProductsSchema.parse({ limit: '100' })).toThrow();
+  });
+});
+
+describe('similar products schema', () => {
+  it('accepts empty query', () => {
+    const parsed = similarProductsSchema.parse({});
+    expect(parsed.storeId).toBeUndefined();
+    expect(parsed.limit).toBeUndefined();
+  });
+
+  it('coerces limit and caps at 24', () => {
+    expect(similarProductsSchema.parse({ limit: '8' }).limit).toBe(8);
+    expect(() => similarProductsSchema.parse({ limit: '30' })).toThrow();
   });
 });
 

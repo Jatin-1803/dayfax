@@ -77,6 +77,7 @@ class CatalogProduct extends Equatable {
     required this.slug,
     required this.categoryName,
     required this.storeName,
+    this.storeId,
     this.description,
     this.brand,
     this.imageUrl,
@@ -91,6 +92,7 @@ class CatalogProduct extends Equatable {
   final String? imageUrl;
   final String categoryName;
   final String storeName;
+  final String? storeId;
   final ProductVariantSummary? defaultVariant;
 
   int get pricePaise => defaultVariant?.pricePaise ?? 0;
@@ -110,13 +112,14 @@ class CatalogProduct extends Equatable {
       imageUrl: json['imageUrl'] as String?,
       categoryName: category['name'] as String? ?? '',
       storeName: store['name'] as String? ?? '',
+      storeId: store['id'] as String?,
       defaultVariant:
           variantJson == null ? null : ProductVariantSummary.fromJson(variantJson),
     );
   }
 
   @override
-  List<Object?> get props => [id, slug, name];
+  List<Object?> get props => [id, slug, name, storeId];
 }
 
 class ProductVariantDetail extends Equatable {
@@ -171,11 +174,14 @@ class CatalogProductDetail extends Equatable {
     required this.id,
     required this.name,
     required this.slug,
+    required this.categoryId,
     required this.categoryName,
     required this.storeId,
     required this.variants,
+    this.categorySlug,
     this.description,
     this.brand,
+    this.subCategory,
     this.imageUrl,
   });
 
@@ -184,8 +190,11 @@ class CatalogProductDetail extends Equatable {
   final String slug;
   final String? description;
   final String? brand;
+  final String? subCategory;
   final String? imageUrl;
+  final String categoryId;
   final String categoryName;
+  final String? categorySlug;
   final String storeId;
   final List<ProductVariantDetail> variants;
 
@@ -205,8 +214,11 @@ class CatalogProductDetail extends Equatable {
       slug: json['slug'] as String,
       description: json['description'] as String?,
       brand: json['brand'] as String?,
+      subCategory: json['subCategory'] as String?,
       imageUrl: json['imageUrl'] as String?,
+      categoryId: category['id'] as String? ?? '',
       categoryName: category['name'] as String? ?? '',
+      categorySlug: category['slug'] as String?,
       storeId: json['storeId'] as String? ?? '',
       variants: variantsJson
           .whereType<Map<String, dynamic>>()
@@ -255,13 +267,16 @@ class ProductPage extends Equatable {
   const ProductPage({
     required this.items,
     required this.pagination,
+    this.rewrittenFor,
   });
 
   final List<CatalogProduct> items;
   final PaginationMeta pagination;
+  final String? rewrittenFor;
 
   factory ProductPage.fromJson(Map<String, dynamic> json) {
     final itemsJson = json['items'] as List<dynamic>? ?? const [];
+    final searchMeta = json['searchMeta'] as Map<String, dynamic>?;
     return ProductPage(
       items: itemsJson
           .whereType<Map<String, dynamic>>()
@@ -270,9 +285,10 @@ class ProductPage extends Equatable {
       pagination: PaginationMeta.fromJson(
         json['pagination'] as Map<String, dynamic>? ?? const {},
       ),
+      rewrittenFor: searchMeta?['rewrittenFor'] as String?,
     );
   }
 
   @override
-  List<Object?> get props => [items, pagination];
+  List<Object?> get props => [items, pagination, rewrittenFor];
 }

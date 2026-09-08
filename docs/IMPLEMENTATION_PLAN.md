@@ -1,4 +1,4 @@
-# Implementation Plan — Dailyfax
+# Implementation Plan — DayFax
 
 Phased delivery. Each phase must meet Definition of Done (UI + API + loading/empty/error + tests + analyzer clean) before the next feature expands.
 
@@ -17,7 +17,7 @@ Phased delivery. Each phase must meet Definition of Done (UI + API + loading/emp
 - [x] Phone + OTP request/verify APIs
 - [x] Secure token storage
 - [x] Auth guard routing
-- [x] Login + OTP screens matching design (Dailyfax branding)
+- [x] Login + OTP screens matching design (DayFax branding)
 - [ ] Token refresh interceptor polish + logout UX
 
 ## Phase 2 — Catalog
@@ -35,9 +35,10 @@ Phased delivery. Each phase must meet Definition of Done (UI + API + loading/emp
 
 ## Phase 4 — Checkout & orders
 
-- Checkout + payment stub (COD first; gateway-ready)
-- Order create + history + detail
-- Status timeline for tracking
+- [x] Checkout + payment stub (COD first; gateway-ready)
+- [x] Order create + history + detail
+- [x] Status timeline for tracking
+- [ ] Partner status transitions (Phase 5)
 
 ## Phase 5 — Delivery interfaces
 
@@ -85,7 +86,7 @@ Use machine LAN IP for physical devices instead of `10.0.2.2`.
 
 ## Assumptions (documented)
 
-1. **Brand:** Product name is **Dailyfax** (design mockups say LocalDash).
+1. **Brand:** Product name is **DayFax** (design mockups say LocalDash).
 2. **Currency:** INR (₹); design $ amounts treated as placeholders.
 3. **OTP:** Dev mode returns/logs a fixed or console OTP; production SMS provider via env.
 4. **Payments V1:** Cash on delivery + payment records table; online gateway later.

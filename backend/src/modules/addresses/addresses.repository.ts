@@ -8,6 +8,7 @@ export interface AddressRow {
   service_area_id: string | null;
   delivery_zone_id: string | null;
   label: string;
+  full_name: string | null;
   line1: string;
   line2: string | null;
   landmark: string | null;
@@ -24,7 +25,7 @@ export class AddressesRepository {
 
   async listByUser(userId: string): Promise<AddressRow[]> {
     const [rows] = await this.db.query<RowDataPacket[]>(
-      `SELECT id, user_id, service_area_id, delivery_zone_id, label, line1, line2, landmark,
+      `SELECT id, user_id, service_area_id, delivery_zone_id, label, full_name, line1, line2, landmark,
               city, state, pincode, latitude, longitude, is_default
        FROM addresses
        WHERE user_id = ? AND deleted_at IS NULL
@@ -36,7 +37,7 @@ export class AddressesRepository {
 
   async findByIdForUser(id: string, userId: string): Promise<AddressRow | null> {
     const [rows] = await this.db.query<RowDataPacket[]>(
-      `SELECT id, user_id, service_area_id, delivery_zone_id, label, line1, line2, landmark,
+      `SELECT id, user_id, service_area_id, delivery_zone_id, label, full_name, line1, line2, landmark,
               city, state, pincode, latitude, longitude, is_default
        FROM addresses
        WHERE id = ? AND user_id = ? AND deleted_at IS NULL
@@ -81,6 +82,7 @@ export class AddressesRepository {
       serviceAreaId: string | null;
       deliveryZoneId: string | null;
       label: string;
+      fullName: string;
       line1: string;
       line2?: string;
       landmark?: string;
@@ -96,15 +98,16 @@ export class AddressesRepository {
     const id = createId();
     await conn.query(
       `INSERT INTO addresses (
-         id, user_id, service_area_id, delivery_zone_id, label, line1, line2, landmark,
+         id, user_id, service_area_id, delivery_zone_id, label, full_name, line1, line2, landmark,
          city, state, pincode, latitude, longitude, is_default
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         input.userId,
         input.serviceAreaId,
         input.deliveryZoneId,
         input.label,
+        input.fullName,
         input.line1,
         input.line2 ?? null,
         input.landmark ?? null,

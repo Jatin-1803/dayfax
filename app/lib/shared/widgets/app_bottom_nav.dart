@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/i18n/i18n_providers.dart';
 import '../../core/theme/customer/customer_colors.dart';
 import '../../core/theme/customer/customer_radius.dart';
 
-class AppBottomNav extends StatelessWidget {
+class AppBottomNav extends ConsumerWidget {
   const AppBottomNav({
     super.key,
     required this.currentIndex,
@@ -16,51 +18,54 @@ class AppBottomNav extends StatelessWidget {
   final int cartCount;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       decoration: BoxDecoration(
         color: CustomerColors.surfaceContainerLowest,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(CustomerRadius.lg)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(CustomerRadius.md)),
+        border: Border(
+          top: BorderSide(color: CustomerColors.outlineVariant.withValues(alpha: 0.35)),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 24,
-            offset: const Offset(0, -8),
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 16,
+            offset: const Offset(0, -4),
           ),
         ],
       ),
       child: SafeArea(
         top: false,
         child: SizedBox(
-          height: 72,
+          height: 64,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _NavItem(
                 icon: Icons.home_outlined,
                 activeIcon: Icons.home,
-                label: 'Home',
+                label: ref.t('nav.home'),
                 selected: currentIndex == 0,
                 onTap: () => onTap(0),
               ),
               _NavItem(
                 icon: Icons.grid_view_outlined,
                 activeIcon: Icons.grid_view_rounded,
-                label: 'Categories',
+                label: ref.t('nav.categories'),
                 selected: currentIndex == 1,
                 onTap: () => onTap(1),
               ),
               _NavItem(
                 icon: Icons.receipt_long_outlined,
                 activeIcon: Icons.receipt_long,
-                label: 'Orders',
+                label: ref.t('nav.orders'),
                 selected: currentIndex == 2,
                 onTap: () => onTap(2),
               ),
               _NavItem(
                 icon: Icons.shopping_cart_outlined,
                 activeIcon: Icons.shopping_cart,
-                label: 'Cart',
+                label: ref.t('nav.cart'),
                 selected: currentIndex == 3,
                 badgeCount: cartCount,
                 onTap: () => onTap(3),
@@ -68,7 +73,7 @@ class AppBottomNav extends StatelessWidget {
               _NavItem(
                 icon: Icons.person_outline,
                 activeIcon: Icons.person,
-                label: 'Profile',
+                label: ref.t('nav.profile'),
                 selected: currentIndex == 4,
                 onTap: () => onTap(4),
               ),
@@ -137,13 +142,24 @@ class _NavItem extends StatelessWidget {
                   ),
               ],
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
             Text(
               label,
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     color: color,
+                    fontSize: 11,
                     fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
                   ),
+            ),
+            const SizedBox(height: 2),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: selected ? 16 : 0,
+              height: 3,
+              decoration: BoxDecoration(
+                color: CustomerColors.primary,
+                borderRadius: BorderRadius.circular(CustomerRadius.full),
+              ),
             ),
           ],
         ),

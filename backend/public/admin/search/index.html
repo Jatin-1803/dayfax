@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DayFax Search Admin</title>
+  <style>
+    :root {
+      --bg: #f3f5f2;
+      --card: #ffffff;
+      --ink: #1a211c;
+      --muted: #5c6b61;
+      --accent: #1f6b4a;
+      --danger: #a33b2c;
+      --line: #d5ddd7;
+      --radius: 12px;
+      --font: "Segoe UI", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      background:
+        radial-gradient(circle at top left, #e4efe7, transparent 40%),
+        linear-gradient(180deg, #eef2ea, var(--bg));
+      color: var(--ink);
+      min-height: 100vh;
+    }
+    header {
+      padding: 1.5rem 1.25rem 0.5rem;
+      max-width: 960px;
+      margin: 0 auto;
+    }
+    h1 { margin: 0 0 0.25rem; font-size: 1.6rem; }
+    p.sub { margin: 0; color: var(--muted); }
+    main {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 1rem 1.25rem 3rem;
+      display: grid;
+      gap: 1rem;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 1rem 1.1rem;
+    }
+    label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 0.35rem; }
+    input, textarea, button, select {
+      font: inherit;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      padding: 0.55rem 0.7rem;
+    }
+    input, textarea { width: 100%; }
+    button {
+      background: var(--accent);
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    button.secondary { background: #2f3b34; }
+    button.danger { background: var(--danger); }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .row { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: end; }
+    .row > * { flex: 1; min-width: 140px; }
+    .status { font-size: 0.9rem; color: var(--muted); }
+    .status.ok { color: var(--accent); }
+    .status.err { color: var(--danger); }
+    .group {
+      border-top: 1px solid var(--line);
+      padding-top: 0.85rem;
+      margin-top: 0.85rem;
+    }
+    .terms { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.5rem 0; }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: #eef5f0;
+      border-radius: 999px;
+      padding: 0.25rem 0.55rem;
+      font-size: 0.85rem;
+    }
+    .chip button {
+      background: transparent;
+      color: var(--danger);
+      padding: 0;
+      font-size: 0.9rem;
+      line-height: 1;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+    th, td { text-align: left; padding: 0.45rem 0.25rem; border-bottom: 1px solid var(--line); }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Search admin</h1>
+    <p class="sub">Manage synonym groups, product aliases, zero-result queries, and Meilisearch reindex.</p>
+  </header>
+  <main>
+    <section class="card" id="authCard">
+      <h2>Admin login</h2>
+      <p class="status">Uses the same OTP auth as the API. Admin role required.</p>
+      <div class="row" style="margin-top: 0.75rem;">
+        <div>
+          <label for="phone">Phone</label>
+          <input id="phone" placeholder="9876543210" />
+        </div>
+        <div>
+          <label for="otp">OTP</label>
+          <input id="otp" placeholder="1234" />
+        </div>
+      </div>
+      <div class="row" style="margin-top: 0.75rem;">
+        <button type="button" id="requestOtpBtn">Request OTP</button>
+        <button type="button" id="verifyOtpBtn" class="secondary">Verify &amp; continue</button>
+      </div>
+      <p id="authStatus" class="status" style="margin-top: 0.75rem;"></p>
+    </section>
+
+    <section class="card hidden" id="appCard">
+      <div class="row">
+        <div>
+          <strong>Signed in</strong>
+          <div id="statusLine" class="status">Loading…</div>
+        </div>
+        <div style="flex: 0;">
+          <button type="button" id="reindexBtn" class="secondary">Reindex Meili</button>
+        </div>
+        <div style="flex: 0;">
+          <button type="button" id="logoutBtn" class="danger">Log out</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card hidden" id="groupsCard">
+      <h2>Synonym groups</h2>
+      <div class="row">
+        <div>
+          <label for="canonical">Canonical term</label>
+          <input id="canonical" placeholder="sugar" />
+        </div>
+        <div>
+          <label for="termsInput">Extra terms (comma-separated)</label>
+          <input id="termsInput" placeholder="cheeni, cheene, चीनी" />
+        </div>
+        <div style="flex: 0;">
+          <button type="button" id="createGroupBtn">Add group</button>
+        </div>
+      </div>
+      <div id="groupsList"></div>
+    </section>
+
+    <section class="card hidden" id="aliasesCard">
+      <h2>Product aliases</h2>
+      <div class="row">
+        <div>
+          <label for="productId">Product UUID</label>
+          <input id="productId" placeholder="product id" />
+        </div>
+        <div>
+          <label for="aliasesInput">Aliases (comma-separated)</label>
+          <input id="aliasesInput" placeholder="tata, tata namak" />
+        </div>
+        <div style="flex: 0;">
+          <button type="button" id="loadAliasesBtn" class="secondary">Load</button>
+        </div>
+        <div style="flex: 0;">
+          <button type="button" id="saveAliasesBtn">Save</button>
+        </div>
+      </div>
+      <p id="aliasesStatus" class="status"></p>
+    </section>
+
+    <section class="card hidden" id="zeroCard">
+      <h2>Zero-result queries (last 14 days)</h2>
+      <button type="button" id="refreshZeroBtn" class="secondary">Refresh</button>
+      <div style="overflow-x: auto; margin-top: 0.75rem;">
+        <table>
+          <thead>
+            <tr>
+              <th>Query</th>
+              <th>Hits</th>
+              <th>Last seen</th>
+            </tr>
+          </thead>
+          <tbody id="zeroBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const API = '/api/v1';
+    const TOKEN_KEY = 'dayfax_admin_access_token';
+
+    function token() {
+      return localStorage.getItem(TOKEN_KEY) || '';
+    }
+
+    function setToken(value) {
+      if (value) localStorage.setItem(TOKEN_KEY, value);
+      else localStorage.removeItem(TOKEN_KEY);
+    }
+
+    async function api(path, options = {}) {
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(options.headers || {}),
+      };
+      if (token()) headers.Authorization = 'Bearer ' + token();
+      const res = await fetch(API + path, { ...options, headers });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || json.success === false) {
+        throw new Error(json.message || ('Request failed: ' + res.status));
+      }
+      return json.data;
+    }
+
+    function showApp(show) {
+      document.getElementById('authCard').classList.toggle('hidden', show);
+      ['appCard', 'groupsCard', 'aliasesCard', 'zeroCard'].forEach((id) => {
+        document.getElementById(id).classList.toggle('hidden', !show);
+      });
+    }
+
+    function setAuthStatus(msg, ok) {
+      const el = document.getElementById('authStatus');
+      el.textContent = msg;
+      el.className = 'status ' + (ok ? 'ok' : 'err');
+    }
+
+    async function requestOtp() {
+      const phone = document.getElementById('phone').value.trim();
+      await api('/auth/otp/request', {
+        method: 'POST',
+        body: JSON.stringify({ phone }),
+      });
+      setAuthStatus('OTP sent (dev code usually 1234)', true);
+    }
+
+    async function verifyOtp() {
+      const phone = document.getElementById('phone').value.trim();
+      const otp = document.getElementById('otp').value.trim();
+      const data = await api('/auth/otp/verify', {
+        method: 'POST',
+        body: JSON.stringify({ phone, otp }),
+      });
+      const access = data.accessToken;
+      if (!access) throw new Error('No access token returned');
+      setToken(access);
+      const me = await api('/auth/me');
+      const roles = me.roles || [];
+      if (!roles.includes('ADMIN')) {
+        setToken('');
+        throw new Error('This account is not ADMIN');
+      }
+      setAuthStatus('Logged in', true);
+      showApp(true);
+      await refreshAll();
+    }
+
+    async function refreshStatus() {
+      const status = await api('/admin/search/status');
+      document.getElementById('statusLine').textContent =
+        'Meilisearch: ' + (status.meilisearchEnabled ? 'enabled' : 'off (MySQL fallback)') +
+        ' · Synonym groups: ' + status.synonymGroups;
+    }
+
+    async function refreshGroups() {
+      const groups = await api('/admin/search/synonym-groups');
+      const root = document.getElementById('groupsList');
+      root.innerHTML = '';
+      for (const group of groups) {
+        const el = document.createElement('div');
+        el.className = 'group';
+        el.innerHTML =
+          '<div class="row">' +
+          '<div><strong>' + escapeHtml(group.canonicalTerm) + '</strong>' +
+          (group.isActive ? '' : ' <span class="status err">(inactive)</span>') +
+          '</div>' +
+          '<div style="flex:0"><button type="button" class="danger" data-del-group="' + group.id + '">Delete</button></div>' +
+          '</div>';
+        const terms = document.createElement('div');
+        terms.className = 'terms';
+        for (const term of group.terms) {
+          const chip = document.createElement('span');
+          chip.className = 'chip';
+          chip.innerHTML =
+            '<span>' + escapeHtml(term.term) + '</span>' +
+            '<button type="button" title="Remove" data-del-term="' + term.id + '" data-group="' + group.id + '">×</button>';
+          terms.appendChild(chip);
+        }
+        const addRow = document.createElement('div');
+        addRow.className = 'row';
+        addRow.innerHTML =
+          '<div><input placeholder="Add term" data-term-input="' + group.id + '" /></div>' +
+          '<div style="flex:0"><button type="button" data-add-term="' + group.id + '">Add term</button></div>';
+        el.appendChild(terms);
+        el.appendChild(addRow);
+        root.appendChild(el);
+      }
+    }
+
+    async function refreshZero() {
+      const rows = await api('/admin/search/zero-results?days=14&limit=50');
+      const body = document.getElementById('zeroBody');
+      body.innerHTML = '';
+      if (!rows.length) {
+        body.innerHTML = '<tr><td colspan="3">No zero-result queries yet</td></tr>';
+        return;
+      }
+      for (const row of rows) {
+        const tr = document.createElement('tr');
+        tr.innerHTML =
+          '<td>' + escapeHtml(row.sampleQ || row.normalizedQ) + '</td>' +
+          '<td>' + row.hitCount + '</td>' +
+          '<td>' + escapeHtml(String(row.lastSeenAt)) + '</td>';
+        body.appendChild(tr);
+      }
+    }
+
+    async function refreshAll() {
+      await refreshStatus();
+      await refreshGroups();
+      await refreshZero();
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;');
+    }
+
+    document.getElementById('requestOtpBtn').onclick = () =>
+      requestOtp().catch((e) => setAuthStatus(e.message, false));
+    document.getElementById('verifyOtpBtn').onclick = () =>
+      verifyOtp().catch((e) => setAuthStatus(e.message, false));
+    document.getElementById('logoutBtn').onclick = () => {
+      setToken('');
+      showApp(false);
+    };
+    document.getElementById('reindexBtn').onclick = async () => {
+      try {
+        const result = await api('/admin/search/reindex', { method: 'POST' });
+        document.getElementById('statusLine').textContent =
+          'Reindexed ' + result.documentCount + ' docs / ' + result.synonymGroups + ' synonym groups';
+      } catch (e) {
+        alert(e.message);
+      }
+    };
+    document.getElementById('createGroupBtn').onclick = async () => {
+      const canonicalTerm = document.getElementById('canonical').value.trim();
+      const terms = document.getElementById('termsInput').value
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean);
+      try {
+        await api('/admin/search/synonym-groups', {
+          method: 'POST',
+          body: JSON.stringify({ canonicalTerm, terms }),
+        });
+        document.getElementById('canonical').value = '';
+        document.getElementById('termsInput').value = '';
+        await refreshGroups();
+        await refreshStatus();
+      } catch (e) {
+        alert(e.message);
+      }
+    };
+    document.getElementById('groupsList').onclick = async (event) => {
+      const t = event.target;
+      if (!(t instanceof HTMLElement)) return;
+      try {
+        if (t.dataset.delGroup) {
+          if (!confirm('Delete this synonym group?')) return;
+          await api('/admin/search/synonym-groups/' + t.dataset.delGroup, { method: 'DELETE' });
+          await refreshGroups();
+          await refreshStatus();
+        }
+        if (t.dataset.delTerm && t.dataset.group) {
+          await api(
+            '/admin/search/synonym-groups/' + t.dataset.group + '/terms/' + t.dataset.delTerm,
+            { method: 'DELETE' },
+          );
+          await refreshGroups();
+        }
+        if (t.dataset.addTerm) {
+          const input = document.querySelector('input[data-term-input="' + t.dataset.addTerm + '"]');
+          const term = input && input.value.trim();
+          if (!term) return;
+          await api('/admin/search/synonym-groups/' + t.dataset.addTerm + '/terms', {
+            method: 'POST',
+            body: JSON.stringify({ term }),
+          });
+          await refreshGroups();
+        }
+      } catch (e) {
+        alert(e.message);
+      }
+    };
+    document.getElementById('loadAliasesBtn').onclick = async () => {
+      const id = document.getElementById('productId').value.trim();
+      try {
+        const data = await api('/admin/products/' + id + '/search-aliases');
+        document.getElementById('aliasesInput').value = (data.aliases || []).join(', ');
+        document.getElementById('aliasesStatus').textContent = 'Loaded ' + (data.aliases || []).length + ' aliases';
+      } catch (e) {
+        document.getElementById('aliasesStatus').textContent = e.message;
+      }
+    };
+    document.getElementById('saveAliasesBtn').onclick = async () => {
+      const id = document.getElementById('productId').value.trim();
+      const aliases = document.getElementById('aliasesInput').value
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean);
+      try {
+        const data = await api('/admin/products/' + id + '/search-aliases', {
+          method: 'PUT',
+          body: JSON.stringify({ aliases }),
+        });
+        document.getElementById('aliasesStatus').textContent = 'Saved ' + data.aliases.length + ' aliases';
+      } catch (e) {
+        document.getElementById('aliasesStatus').textContent = e.message;
+      }
+    };
+    document.getElementById('refreshZeroBtn').onclick = () =>
+      refreshZero().catch((e) => alert(e.message));
+
+    (async function boot() {
+      if (!token()) return;
+      try {
+        const me = await api('/auth/me');
+        const roles = me.roles || [];
+        if (!roles.includes('ADMIN')) {
+          setToken('');
+          return;
+        }
+        showApp(true);
+        await refreshAll();
+      } catch {
+        setToken('');
+      }
+    })();
+  </script>
+</body>
+</html>

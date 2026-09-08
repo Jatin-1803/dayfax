@@ -9,8 +9,11 @@ export 'app_role.dart';
 export 'customer/customer_theme.dart';
 export 'delivery/delivery_theme.dart';
 
-/// Active product surface — drives ThemeData for the single Dailyfax app.
+/// Active product surface — drives ThemeData for the single DayFax app.
 final appRoleProvider = StateProvider<AppRole>((ref) => AppRole.customer);
+
+/// Force logistics theme on `/partner/login` and `/partner/otp` before role is known.
+final partnerAuthSurfaceProvider = StateProvider<bool>((ref) => false);
 
 abstract final class AppTheme {
   static ThemeData forRole(AppRole role) {
@@ -18,5 +21,15 @@ abstract final class AppTheme {
       AppRole.customer => CustomerTheme.light(),
       AppRole.deliveryPartner => DeliveryTheme.light(),
     };
+  }
+
+  static ThemeData resolve({
+    required AppRole role,
+    required bool partnerAuthSurface,
+  }) {
+    if (partnerAuthSurface || role.isDeliveryPartner) {
+      return DeliveryTheme.light();
+    }
+    return CustomerTheme.light();
   }
 }

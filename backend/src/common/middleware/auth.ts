@@ -4,11 +4,14 @@ import { env } from '../../config/env.js';
 import { ForbiddenError, UnauthorizedError } from '../errors/app-error.js';
 
 export type RoleCode = 'CUSTOMER' | 'DELIVERY_PARTNER' | 'ADMIN';
+export type AuthPrincipal = 'user' | 'admin';
 
 export interface AuthUser {
   id: string;
   phone: string;
+  email?: string;
   roles: RoleCode[];
+  principal: AuthPrincipal;
 }
 
 declare global {
@@ -21,9 +24,11 @@ declare global {
 
 interface AccessTokenPayload {
   sub: string;
-  phone: string;
+  phone?: string;
+  email?: string;
   roles: RoleCode[];
   type: 'access';
+  principal?: AuthPrincipal;
 }
 
 export function authenticate(req: Request, _res: Response, next: NextFunction): void {
@@ -42,8 +47,10 @@ export function authenticate(req: Request, _res: Response, next: NextFunction): 
     }
     req.user = {
       id: payload.sub,
-      phone: payload.phone,
+      phone: payload.phone ?? '',
+      email: payload.email,
       roles: payload.roles,
+      principal: payload.principal ?? 'user',
     };
     next();
   } catch {
@@ -60,6 +67,21 @@ export function requireRoles(...allowed: RoleCode[]) {
     const ok = req.user.roles.some((role) => allowed.includes(role));
     if (!ok) {
       next(new ForbiddenError());
+      return;
+    }
+    next();
+  };
+}
+
+/** Admin console routes that must be email/password admin_users sessions. */
+export function requireAdminPrincipal() {
+  return (req: Request, _res: Response, next: NextFunction): void => {
+    if (!req.user) {
+      next(new UnauthorizedError());
+      return;
+    }
+    if (req.user.principal !== 'admin' || !req.user.roles.includes('ADMIN')) {
+      next(new ForbiddenError('Admin console login required'));
       return;
     }
     next();

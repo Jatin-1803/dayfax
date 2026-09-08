@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DayFax Shops Admin</title>
+  <style>
+    :root {
+      --bg: #f3f5f2;
+      --card: #ffffff;
+      --ink: #1a211c;
+      --muted: #5c6b61;
+      --accent: #1f6b4a;
+      --danger: #a33b2c;
+      --line: #d5ddd7;
+      --radius: 12px;
+      --font: "Segoe UI", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      background:
+        radial-gradient(circle at top left, #e4efe7, transparent 40%),
+        linear-gradient(180deg, #eef2ea, var(--bg));
+      color: var(--ink);
+      min-height: 100vh;
+    }
+    header {
+      padding: 1.5rem 1.25rem 0.5rem;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    h1 { margin: 0 0 0.25rem; font-size: 1.6rem; }
+    p.sub { margin: 0; color: var(--muted); }
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 1rem 1.25rem 3rem;
+      display: grid;
+      gap: 1rem;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 1rem 1.1rem;
+    }
+    label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 0.35rem; }
+    input, textarea, button, select {
+      font: inherit;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      padding: 0.55rem 0.7rem;
+    }
+    input, textarea, select { width: 100%; }
+    button {
+      background: var(--accent);
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    button.secondary { background: #2f3b34; }
+    button.danger { background: var(--danger); }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .row { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: end; }
+    .row > * { flex: 1; min-width: 140px; }
+    .status { font-size: 0.9rem; color: var(--muted); }
+    .status.ok { color: var(--accent); }
+    .status.err { color: var(--danger); }
+    .hidden { display: none; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+    th, td { text-align: left; padding: 0.55rem 0.35rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+    .shop-avatar {
+      width: 40px; height: 40px; border-radius: 999px; object-fit: cover; background: #eef5f0;
+    }
+    .pill {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      background: #eef5f0;
+      font-size: 0.78rem;
+    }
+    .layout-2 {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 1rem;
+    }
+    @media (max-width: 900px) {
+      .layout-2 { grid-template-columns: 1fr; }
+    }
+    nav.admin-nav { margin-top: 0.75rem; display: flex; gap: 0.75rem; flex-wrap: wrap; }
+    nav.admin-nav a { color: var(--accent); font-weight: 600; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Shops admin</h1>
+    <p class="sub">Create local popular shops and manage their menu items.</p>
+    <nav class="admin-nav">
+      <a href="/admin/">Admin home</a>
+      <a href="/admin/search/">Search admin</a>
+    </nav>
+  </header>
+  <main>
+    <section class="card" id="authCard">
+      <h2>Admin login</h2>
+      <p class="status">Uses the same OTP auth as the API. Admin role required.</p>
+      <div class="row" style="margin-top: 0.75rem;">
+        <div>
+          <label for="phone">Phone</label>
+          <input id="phone" placeholder="9876543210" />
+        </div>
+        <div>
+          <label for="otp">OTP</label>
+          <input id="otp" placeholder="1234" />
+        </div>
+      </div>
+      <div class="row" style="margin-top: 0.75rem;">
+        <button type="button" id="requestOtpBtn">Request OTP</button>
+        <button type="button" id="verifyOtpBtn" class="secondary">Verify &amp; continue</button>
+      </div>
+      <p id="authStatus" class="status" style="margin-top: 0.75rem;"></p>
+    </section>
+
+    <section class="card hidden" id="appCard">
+      <div class="row">
+        <div>
+          <strong>Signed in</strong>
+          <div id="statusLine" class="status">Ready</div>
+        </div>
+        <div style="flex: 0;">
+          <button type="button" id="logoutBtn" class="danger">Log out</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="layout-2 hidden" id="workArea">
+      <section class="card">
+        <h2>Shops</h2>
+        <div class="row" style="margin-bottom: 0.75rem;">
+          <div>
+            <label for="shopName">Name</label>
+            <input id="shopName" placeholder="Avtar" />
+          </div>
+          <div>
+            <label for="shopPhone">Phone</label>
+            <input id="shopPhone" placeholder="9876501001" />
+          </div>
+        </div>
+        <div class="row" style="margin-bottom: 0.75rem;">
+          <div>
+            <label for="shopAddress">Address</label>
+            <input id="shopAddress" placeholder="Main Market Road" />
+          </div>
+          <div>
+            <label for="shopCity">City</label>
+            <input id="shopCity" placeholder="Launch Town" />
+          </div>
+        </div>
+        <div class="row" style="margin-bottom: 0.75rem;">
+          <div>
+            <label for="shopLat">Latitude</label>
+            <input id="shopLat" placeholder="26.8467" />
+          </div>
+          <div>
+            <label for="shopLng">Longitude</label>
+            <input id="shopLng" placeholder="80.9462" />
+          </div>
+          <div>
+            <label for="shopImage">Avatar URL</label>
+            <input id="shopImage" placeholder="https://..." />
+          </div>
+        </div>
+        <div class="row" style="margin-bottom: 0.75rem;">
+          <div>
+            <label for="shopType">Type</label>
+            <select id="shopType">
+              <option value="FOOD" selected>FOOD</option>
+              <option value="GROCERY">GROCERY</option>
+              <option value="VEGETABLES">VEGETABLES</option>
+              <option value="MIXED">MIXED</option>
+              <option value="OTHER">OTHER</option>
+            </select>
+          </div>
+          <div>
+            <label for="shopPopular">Popular</label>
+            <select id="shopPopular">
+              <option value="true" selected>Yes</option>
+              <option value="false">No</option>
+            </select>
+          </div>
+          <div style="flex:0;">
+            <button type="button" id="createShopBtn">Add shop</button>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th></th>
+              <th>Shop</th>
+              <th>Contact</th>
+              <th>Flags</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="shopsBody"></tbody>
+        </table>
+      </section>
+
+      <section class="card">
+        <h2>Items</h2>
+        <p id="selectedShopLabel" class="status">Select a shop to manage items.</p>
+        <div class="row" style="margin: 0.75rem 0;">
+          <div>
+            <label for="itemName">Item name</label>
+            <input id="itemName" placeholder="Patiz" />
+          </div>
+          <div>
+            <label for="itemPrice">Price (₹)</label>
+            <input id="itemPrice" placeholder="25" />
+          </div>
+        </div>
+        <div class="row" style="margin-bottom: 0.75rem;">
+          <div>
+            <label for="itemImage">Image URL</label>
+            <input id="itemImage" placeholder="https://..." />
+          </div>
+          <div style="flex:0;">
+            <button type="button" id="addItemBtn" disabled>Add item</button>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Price</th>
+              <th>Available</th>
+            </tr>
+          </thead>
+          <tbody id="itemsBody">
+            <tr><td colspan="3">No shop selected</td></tr>
+          </tbody>
+        </table>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const API = '/api/v1';
+    const TOKEN_KEY = 'dayfax_admin_token';
+    let selectedShopId = null;
+    let selectedShopName = '';
+
+    function token() {
+      return localStorage.getItem(TOKEN_KEY) || '';
+    }
+
+    function setToken(value) {
+      if (value) localStorage.setItem(TOKEN_KEY, value);
+      else localStorage.removeItem(TOKEN_KEY);
+    }
+
+    async function api(path, options = {}) {
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(options.headers || {}),
+      };
+      if (token()) headers.Authorization = 'Bearer ' + token();
+      const res = await fetch(API + path, { ...options, headers });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || json.success === false) {
+        throw new Error(json.message || ('Request failed: ' + res.status));
+      }
+      return json.data;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;');
+    }
+
+    function showApp(show) {
+      document.getElementById('authCard').classList.toggle('hidden', show);
+      document.getElementById('appCard').classList.toggle('hidden', !show);
+      document.getElementById('workArea').classList.toggle('hidden', !show);
+    }
+
+    function setAuthStatus(msg, ok) {
+      const el = document.getElementById('authStatus');
+      el.textContent = msg;
+      el.className = 'status ' + (ok ? 'ok' : 'err');
+    }
+
+    function rupeesToPaise(value) {
+      const n = Number(String(value).trim());
+      if (!Number.isFinite(n) || n <= 0) throw new Error('Enter a valid price in rupees');
+      return Math.round(n * 100);
+    }
+
+    async function requestOtp() {
+      const phone = document.getElementById('phone').value.trim();
+      await api('/auth/otp/request', {
+        method: 'POST',
+        body: JSON.stringify({ phone }),
+      });
+      setAuthStatus('OTP sent (dev code usually 1234)', true);
+    }
+
+    async function verifyOtp() {
+      const phone = document.getElementById('phone').value.trim();
+      const otp = document.getElementById('otp').value.trim();
+      const data = await api('/auth/otp/verify', {
+        method: 'POST',
+        body: JSON.stringify({ phone, otp }),
+      });
+      const access = data.accessToken;
+      if (!access) throw new Error('No access token returned');
+      setToken(access);
+      const me = await api('/auth/me');
+      const roles = me.roles || [];
+      if (!roles.includes('ADMIN')) {
+        setToken('');
+        throw new Error('This account is not ADMIN');
+      }
+      setAuthStatus('Logged in', true);
+      showApp(true);
+      await refreshShops();
+    }
+
+    async function refreshShops() {
+      const shops = await api('/admin/stores');
+      const body = document.getElementById('shopsBody');
+      body.innerHTML = '';
+      if (!shops.length) {
+        body.innerHTML = '<tr><td colspan="5">No shops yet</td></tr>';
+        return;
+      }
+      for (const shop of shops) {
+        const tr = document.createElement('tr');
+        const img = shop.imageUrl
+          ? '<img class="shop-avatar" src="' + escapeHtml(shop.imageUrl) + '" alt="" />'
+          : '<div class="shop-avatar"></div>';
+        tr.innerHTML =
+          '<td>' + img + '</td>' +
+          '<td><strong>' + escapeHtml(shop.name) + '</strong><div class="status">' +
+          escapeHtml(shop.addressSummary || shop.city || '') + '</div></td>' +
+          '<td>' + escapeHtml(shop.phone ? ((shop.phoneCountryCode || '+91') + ' ' + shop.phone) : '—') + '</td>' +
+          '<td><span class="pill">' + escapeHtml(shop.storeType) + '</span> ' +
+          (shop.isPopular ? '<span class="pill">popular</span> ' : '') +
+          (shop.isActive ? '' : '<span class="pill">inactive</span>') + '</td>' +
+          '<td style="white-space:nowrap">' +
+          '<button type="button" data-select="' + shop.id + '" data-name="' + escapeHtml(shop.name) + '">Items</button> ' +
+          '<button type="button" class="secondary" data-toggle="' + shop.id + '" data-active="' + (shop.isActive ? '0' : '1') + '">' +
+          (shop.isActive ? 'Disable' : 'Enable') + '</button></td>';
+        body.appendChild(tr);
+      }
+      document.getElementById('statusLine').textContent = shops.length + ' shops';
+    }
+
+    async function selectShop(id, name) {
+      selectedShopId = id;
+      selectedShopName = name;
+      document.getElementById('selectedShopLabel').textContent = 'Menu for ' + name;
+      document.getElementById('addItemBtn').disabled = false;
+      await refreshItems();
+    }
+
+    async function refreshItems() {
+      const body = document.getElementById('itemsBody');
+      if (!selectedShopId) {
+        body.innerHTML = '<tr><td colspan="3">No shop selected</td></tr>';
+        return;
+      }
+      const items = await api('/admin/stores/' + selectedShopId + '/products');
+      body.innerHTML = '';
+      if (!items.length) {
+        body.innerHTML = '<tr><td colspan="3">No items yet</td></tr>';
+        return;
+      }
+      for (const item of items) {
+        const tr = document.createElement('tr');
+        const price = ((item.pricePaise || 0) / 100).toFixed(0);
+        tr.innerHTML =
+          '<td><strong>' + escapeHtml(item.name) + '</strong></td>' +
+          '<td>₹' + price + '</td>' +
+          '<td><button type="button" class="' + (item.isAvailable ? 'secondary' : '') + '" data-avail="' +
+          item.id + '" data-next="' + (item.isAvailable ? '0' : '1') + '">' +
+          (item.isAvailable ? 'Available' : 'Hidden') + '</button></td>';
+        body.appendChild(tr);
+      }
+    }
+
+    document.getElementById('requestOtpBtn').onclick = () =>
+      requestOtp().catch((e) => setAuthStatus(e.message, false));
+    document.getElementById('verifyOtpBtn').onclick = () =>
+      verifyOtp().catch((e) => setAuthStatus(e.message, false));
+    document.getElementById('logoutBtn').onclick = () => {
+      setToken('');
+      selectedShopId = null;
+      showApp(false);
+    };
+
+    document.getElementById('createShopBtn').onclick = async () => {
+      try {
+        const latRaw = document.getElementById('shopLat').value.trim();
+        const lngRaw = document.getElementById('shopLng').value.trim();
+        const payload = {
+          name: document.getElementById('shopName').value.trim(),
+          phone: document.getElementById('shopPhone').value.trim() || null,
+          addressLine1: document.getElementById('shopAddress').value.trim() || null,
+          city: document.getElementById('shopCity').value.trim() || null,
+          imageUrl: document.getElementById('shopImage').value.trim() || null,
+          storeType: document.getElementById('shopType').value,
+          isPopular: document.getElementById('shopPopular').value === 'true',
+          latitude: latRaw ? Number(latRaw) : null,
+          longitude: lngRaw ? Number(lngRaw) : null,
+        };
+        if (!payload.name) throw new Error('Shop name is required');
+        await api('/admin/stores', { method: 'POST', body: JSON.stringify(payload) });
+        document.getElementById('shopName').value = '';
+        document.getElementById('shopPhone').value = '';
+        document.getElementById('shopAddress').value = '';
+        document.getElementById('shopImage').value = '';
+        await refreshShops();
+      } catch (e) {
+        alert(e.message);
+      }
+    };
+
+    document.getElementById('addItemBtn').onclick = async () => {
+      try {
+        if (!selectedShopId) throw new Error('Select a shop first');
+        const name = document.getElementById('itemName').value.trim();
+        if (!name) throw new Error('Item name is required');
+        const pricePaise = rupeesToPaise(document.getElementById('itemPrice').value);
+        await api('/admin/stores/products', {
+          method: 'POST',
+          body: JSON.stringify({
+            storeId: selectedShopId,
+            name,
+            pricePaise,
+            imageUrl: document.getElementById('itemImage').value.trim() || null,
+            categorySlug: 'food',
+          }),
+        });
+        document.getElementById('itemName').value = '';
+        document.getElementById('itemPrice').value = '';
+        document.getElementById('itemImage').value = '';
+        await refreshItems();
+      } catch (e) {
+        alert(e.message);
+      }
+    };
+
+    document.getElementById('shopsBody').onclick = async (event) => {
+      const t = event.target;
+      if (!(t instanceof HTMLElement)) return;
+      try {
+        if (t.dataset.select) {
+          await selectShop(t.dataset.select, t.dataset.name || 'Shop');
+        }
+        if (t.dataset.toggle) {
+          await api('/admin/stores/' + t.dataset.toggle, {
+            method: 'PATCH',
+            body: JSON.stringify({ isActive: t.dataset.active === '1' }),
+          });
+          await refreshShops();
+        }
+      } catch (e) {
+        alert(e.message);
+      }
+    };
+
+    document.getElementById('itemsBody').onclick = async (event) => {
+      const t = event.target;
+      if (!(t instanceof HTMLElement) || !t.dataset.avail || !selectedShopId) return;
+      try {
+        await api('/admin/stores/' + selectedShopId + '/products/' + t.dataset.avail, {
+          method: 'PATCH',
+          body: JSON.stringify({ isAvailable: t.dataset.next === '1' }),
+        });
+        await refreshItems();
+      } catch (e) {
+        alert(e.message);
+      }
+    };
+
+    if (token()) {
+      api('/auth/me')
+        .then((me) => {
+          if (!(me.roles || []).includes('ADMIN')) throw new Error('Not admin');
+          showApp(true);
+          return refreshShops();
+        })
+        .catch(() => {
+          setToken('');
+          showApp(false);
+        });
+    }
+  </script>
+</body>
+</html>

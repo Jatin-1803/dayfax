@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('Login screen renders Dailyfax branding', (tester) async {
+  testWidgets('Login screen renders DayFax branding', (tester) async {
     await tester.pumpWidget(
       const ProviderScope(
         child: MaterialApp(
@@ -16,7 +16,7 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('Dailyfax'), findsOneWidget);
+    expect(find.text('DayFax'), findsOneWidget);
     expect(find.text('Continue'), findsOneWidget);
     expect(find.byType(AppButton), findsOneWidget);
   });

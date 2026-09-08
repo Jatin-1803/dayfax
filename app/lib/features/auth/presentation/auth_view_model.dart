@@ -54,7 +54,7 @@ class AuthViewModel extends Notifier<AuthUiState> {
   Future<void> requestOtp(String phone) async {
     final normalized = phone.replaceAll(RegExp(r'\D'), '');
     if (!RegExp(r'^[6-9]\d{9}$').hasMatch(normalized)) {
-      state = const AuthError('Enter a valid 10-digit mobile number');
+      state = const AuthError('auth.invalid_phone');
       return;
     }
 
@@ -70,9 +70,13 @@ class AuthViewModel extends Notifier<AuthUiState> {
     }
   }
 
-  Future<void> verifyOtp({required String phone, required String otp}) async {
+  Future<void> verifyOtp({
+    required String phone,
+    required String otp,
+    bool requireDeliveryPartner = false,
+  }) async {
     if (!RegExp(r'^\d{4,6}$').hasMatch(otp)) {
-      state = const AuthError('Enter the OTP sent to your phone');
+      state = const AuthError('auth.enter_otp');
       return;
     }
 
@@ -82,7 +86,13 @@ class AuthViewModel extends Notifier<AuthUiState> {
       final primary = session.user.primaryAppRole;
       if (primary == null) {
         await _repo.logout();
-        state = const AuthError('No app access for this account.');
+        state = const AuthError('auth.no_access');
+        return;
+      }
+
+      if (requireDeliveryPartner && primary != 'DELIVERY_PARTNER') {
+        await _repo.logout();
+        state = const AuthError('auth.no_access');
         return;
       }
 
@@ -102,6 +112,10 @@ class AuthViewModel extends Notifier<AuthUiState> {
       state = const AuthInitial();
     }
   }
+
+  void reset() {
+    state = const AuthInitial();
+  }
 }
 
 final authViewModelProvider =
@@ -109,5 +123,24 @@ final authViewModelProvider =
 
 final sessionBootstrapProvider = FutureProvider<bool>((ref) async {
   final repo = ref.watch(authRepositoryProvider);
-  return repo.hasSession();
+  final hasSession = await repo.hasSession();
+  if (!hasSession) {
+    return false;
+  }
+
+  try {
+    final user = await repo.fetchMe();
+    final primary = user.primaryAppRole;
+    if (primary == null) {
+      await repo.logout();
+      return false;
+    }
+    ref.read(appRoleProvider.notifier).state = primary == 'DELIVERY_PARTNER'
+        ? AppRole.deliveryPartner
+        : AppRole.customer;
+    return true;
+  } on AppFailure {
+    await repo.logout();
+    return false;
+  }
 });

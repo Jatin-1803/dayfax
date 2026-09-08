@@ -15,6 +15,7 @@
     "seed:catalog": "tsx src/common/database/seed-catalog.ts",
     "seed:i18n": "tsx src/common/database/seed-i18n.ts",
     "search:reindex": "tsx src/scripts/search-reindex.ts",
+    "import:products": "tsx src/scripts/import-product-sheet.ts",
     "reclaim:unpaid": "tsx src/scripts/reclaim-unpaid-orders.ts",
     "test": "vitest run",
     "test:watch": "vitest",

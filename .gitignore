@@ -15,3 +15,7 @@ apps/
 emulator_*.txt
 *.pem
 .cursor/
+backend/public/catalog/**/*.jpg
+backend/public/catalog/**/*.jpeg
+backend/public/catalog/**/*.png
+

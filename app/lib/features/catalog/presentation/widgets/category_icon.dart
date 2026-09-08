@@ -10,6 +10,10 @@ IconData iconForCategory(String? iconKey) {
       return Icons.shopping_bag;
     case 'eco':
       return Icons.eco;
+    case 'spa':
+      return Icons.spa_outlined;
+    case 'face':
+      return Icons.face_retouching_natural;
     default:
       return Icons.category_outlined;
   }

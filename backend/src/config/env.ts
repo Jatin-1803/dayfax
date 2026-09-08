@@ -56,6 +56,8 @@ const envSchema = z.object({
   PUBLIC_BASE_URL: z.string().default('http://127.0.0.1:3000'),
   RAZORPAY_KEY_ID: z.string().optional().default(''),
   RAZORPAY_KEY_SECRET: z.string().optional().default(''),
+  /** HMAC secret from the Razorpay dashboard webhook. Never send this to clients. */
+  RAZORPAY_WEBHOOK_SECRET: z.string().optional().default(''),
   MEILI_HOST: z.string().optional().default(''),
   MEILI_MASTER_KEY: z.string().optional().default(''),
   MEILI_INDEX_PRODUCTS: z.string().default('products'),

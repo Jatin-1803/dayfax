@@ -138,6 +138,8 @@ class ProductListState {
     this.categorySlug,
     this.title,
     this.rewrittenFor,
+    this.subcategories = const [],
+    this.selectedSubSlug,
   });
 
   final List<CatalogProduct> items;
@@ -149,6 +151,8 @@ class ProductListState {
   final String? categorySlug;
   final String? title;
   final String? rewrittenFor;
+  final List<CatalogCategory> subcategories;
+  final String? selectedSubSlug;
 
   bool get hasMore => pagination?.hasNextPage ?? false;
 
@@ -164,6 +168,9 @@ class ProductListState {
     String? title,
     String? rewrittenFor,
     bool clearRewrittenFor = false,
+    List<CatalogCategory>? subcategories,
+    String? selectedSubSlug,
+    bool clearSelectedSubSlug = false,
   }) {
     return ProductListState(
       items: items ?? this.items,
@@ -175,13 +182,19 @@ class ProductListState {
       categorySlug: categorySlug ?? this.categorySlug,
       title: title ?? this.title,
       rewrittenFor: clearRewrittenFor ? null : (rewrittenFor ?? this.rewrittenFor),
+      subcategories: subcategories ?? this.subcategories,
+      selectedSubSlug:
+          clearSelectedSubSlug ? null : (selectedSubSlug ?? this.selectedSubSlug),
     );
   }
 }
 
 class CategoryProductsViewModel extends FamilyNotifier<ProductListState, String> {
+  Timer? _debounce;
+
   @override
   ProductListState build(String arg) {
+    ref.onDispose(() => _debounce?.cancel());
     ref.listen(appLangCodeProvider, (previous, next) {
       if (previous != null && previous != next) {
         load(reset: true);
@@ -191,34 +204,73 @@ class CategoryProductsViewModel extends FamilyNotifier<ProductListState, String>
     return ProductListState(categorySlug: arg, isLoading: true);
   }
 
+  void onFilterChanged(String raw) {
+    final query = raw.trim();
+    state = state.copyWith(query: query, clearError: true);
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 350), () {
+      load(reset: true);
+    });
+  }
+
+  void selectSubCategory(String? slug) {
+    if (state.selectedSubSlug == slug) return;
+    _debounce?.cancel();
+    state = state.copyWith(
+      selectedSubSlug: slug,
+      clearSelectedSubSlug: slug == null,
+      query: '',
+      clearError: true,
+    );
+    load(reset: true);
+  }
+
   Future<void> load({bool reset = false}) async {
-    final slug = arg;
+    final parentSlug = arg;
     final nextPage = reset ? 1 : (state.pagination?.page ?? 0) + 1;
     if (!reset && !state.hasMore) return;
     final lang = ref.read(appLangCodeProvider);
+    final query = state.query.trim();
+    final selectedSubSlug = state.selectedSubSlug;
 
     state = state.copyWith(
       isLoading: reset,
       isLoadingMore: !reset,
       clearError: true,
+      items: reset ? const [] : null,
     );
 
     try {
-      final category =
-          await ref.read(catalogRepositoryProvider).getCategory(slug, lang: lang);
-      final page = await ref.read(catalogRepositoryProvider).listProducts(
-            page: nextPage,
-            limit: 20,
-            categorySlug: slug,
-            lang: lang,
-          );
+      final repo = ref.read(catalogRepositoryProvider);
+      var title = state.title;
+      var subcategories = state.subcategories;
+      if (reset) {
+        final category = await repo.getCategory(parentSlug, lang: lang);
+        title = category.name;
+        subcategories = await repo.listCategories(parentId: category.id, lang: lang);
+      }
+
+      final selectedStillValid = selectedSubSlug != null &&
+          subcategories.any((category) => category.slug == selectedSubSlug);
+      final productSlug = selectedStillValid ? selectedSubSlug : parentSlug;
+
+      final page = await repo.listProducts(
+        page: nextPage,
+        limit: 20,
+        categorySlug: productSlug,
+        q: query.isEmpty ? null : query,
+        lang: lang,
+      );
       state = state.copyWith(
-        title: category.name,
+        title: title,
+        subcategories: subcategories,
         items: reset ? page.items : [...state.items, ...page.items],
         pagination: page.pagination,
         isLoading: false,
         isLoadingMore: false,
         clearError: true,
+        selectedSubSlug: selectedStillValid ? selectedSubSlug : null,
+        clearSelectedSubSlug: !selectedStillValid,
       );
     } on AppFailure catch (failure) {
       state = state.copyWith(
@@ -370,3 +422,36 @@ class SearchViewModel extends Notifier<ProductListState> {
 
 final searchViewModelProvider =
     NotifierProvider<SearchViewModel, ProductListState>(SearchViewModel.new);
+
+class TopSellingProductsViewModel extends Notifier<AsyncValue<List<CatalogProduct>>> {
+  @override
+  AsyncValue<List<CatalogProduct>> build() {
+    ref.listen(appLangCodeProvider, (previous, next) {
+      if (previous != null && previous != next) {
+        load();
+      }
+    });
+    Future.microtask(load);
+    return const AsyncValue.loading();
+  }
+
+  Future<void> load() async {
+    state = const AsyncValue.loading();
+    try {
+      final page = await ref.read(catalogRepositoryProvider).listProducts(
+            page: 1,
+            limit: 12,
+            popular: true,
+            lang: ref.read(appLangCodeProvider),
+          );
+      state = AsyncValue.data(page.items);
+    } on AppFailure catch (failure) {
+      state = AsyncValue.error(failure, StackTrace.current);
+    }
+  }
+}
+
+final topSellingProductsViewModelProvider =
+    NotifierProvider<TopSellingProductsViewModel, AsyncValue<List<CatalogProduct>>>(
+  TopSellingProductsViewModel.new,
+);

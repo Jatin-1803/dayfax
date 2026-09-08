@@ -59,7 +59,9 @@ OTP_DEV_CODE=1234
 OTP_PROVIDER=dev
 
 LOG_LEVEL=info
-CORS_ORIGIN=https://${DOMAIN},https://www.${DOMAIN}
+CORS_ORIGIN=https://admin.dayfax.in,https://${DOMAIN},https://www.${DOMAIN}
+PUBLIC_BASE_URL=https://backend.${DOMAIN}
+
 EOF
   chmod 600 "$BACKEND_ENV"
 else

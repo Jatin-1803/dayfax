@@ -5,17 +5,29 @@ import { addCartItemSchema, updateCartItemSchema } from '../cart/cart.schema.js'
 describe('addresses schema', () => {
   it('accepts a valid address', () => {
     const parsed = createAddressSchema.parse({
+      fullName: 'Rahul Sharma',
       line1: '12 Market Road',
       city: 'Launch Town',
       pincode: '226001',
     });
     expect(parsed.label).toBe('Home');
+    expect(parsed.fullName).toBe('Rahul Sharma');
     expect(parsed.pincode).toBe('226001');
+  });
+
+  it('requires a full name', () => {
+    expect(() =>
+      createAddressSchema.parse({
+        line1: '12 Market Road',
+        city: 'Launch Town',
+      }),
+    ).toThrow();
   });
 
   it('rejects invalid pincode', () => {
     expect(() =>
       createAddressSchema.parse({
+        fullName: 'Rahul Sharma',
         line1: '12 Market Road',
         city: 'Launch Town',
         pincode: '12',

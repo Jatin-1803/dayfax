@@ -8,10 +8,10 @@ void main() {
       'name': 'Fresh Milk',
       'slug': 'fresh-milk',
       'description': 'Farm-fresh milk',
-      'brand': 'Dailyfax Dairy',
+      'brand': 'DayFax Dairy',
       'imageUrl': 'https://example.com/milk.jpg',
       'category': {'id': 'c1', 'name': 'Grocery'},
-      'store': {'id': 's1', 'name': 'Dailyfax Mart'},
+      'store': {'id': 's1', 'name': 'DayFax Mart'},
       'defaultVariant': {
         'id': 'v1',
         'unitLabel': '500 ml',
@@ -26,7 +26,7 @@ void main() {
     expect(product.name, 'Fresh Milk');
     expect(product.pricePaise, 3000);
     expect(product.inStock, isTrue);
-    expect(product.storeName, 'Dailyfax Mart');
+    expect(product.storeName, 'DayFax Mart');
   });
 
   test('ProductPage parses pagination meta', () {

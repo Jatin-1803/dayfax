@@ -14,12 +14,16 @@ class CatalogRepository {
 
   final Dio _dio;
 
-  Future<List<CatalogCategory>> listCategories({String? parentId}) async {
+  Future<List<CatalogCategory>> listCategories({
+    String? parentId,
+    String lang = 'en',
+  }) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
         '/categories',
         queryParameters: {
           'parentId': ?parentId,
+          'lang': lang,
         },
       );
       final body = response.data;
@@ -40,9 +44,12 @@ class CatalogRepository {
     }
   }
 
-  Future<CatalogCategory> getCategory(String idOrSlug) async {
+  Future<CatalogCategory> getCategory(String idOrSlug, {String lang = 'en'}) async {
     try {
-      final response = await _dio.get<Map<String, dynamic>>('/categories/$idOrSlug');
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/categories/$idOrSlug',
+        queryParameters: {'lang': lang},
+      );
       final body = response.data;
       if (body == null || body['success'] != true) {
         throw const ServerFailure();
@@ -61,6 +68,8 @@ class CatalogRepository {
     String? categorySlug,
     String? q,
     String? storeId,
+    bool popular = false,
+    String lang = 'en',
   }) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
@@ -72,6 +81,8 @@ class CatalogRepository {
           'categorySlug': ?categorySlug,
           if (q != null && q.isNotEmpty) 'q': q,
           'storeId': ?storeId,
+          if (popular) 'popular': 'true',
+          'lang': lang,
         },
       );
       final body = response.data;
@@ -88,12 +99,14 @@ class CatalogRepository {
   Future<CatalogProductDetail> getProduct(
     String idOrSlug, {
     String? storeId,
+    String lang = 'en',
   }) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
         '/products/$idOrSlug',
         queryParameters: {
           'storeId': ?storeId,
+          'lang': lang,
         },
       );
       final body = response.data;
@@ -101,6 +114,37 @@ class CatalogRepository {
         throw const ServerFailure();
       }
       return CatalogProductDetail.fromJson(body['data'] as Map<String, dynamic>);
+    } catch (error) {
+      if (error is AppFailure) rethrow;
+      throw mapDioError(error);
+    }
+  }
+
+  Future<List<CatalogProduct>> listSimilarProducts(
+    String idOrSlug, {
+    String? storeId,
+    int limit = 12,
+    String lang = 'en',
+  }) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/products/$idOrSlug/similar',
+        queryParameters: {
+          'storeId': ?storeId,
+          'limit': limit,
+          'lang': lang,
+        },
+      );
+      final body = response.data;
+      if (body == null || body['success'] != true) {
+        throw const ServerFailure();
+      }
+      final data = body['data'] as Map<String, dynamic>? ?? const {};
+      final itemsJson = data['items'] as List<dynamic>? ?? const [];
+      return itemsJson
+          .whereType<Map<String, dynamic>>()
+          .map(CatalogProduct.fromJson)
+          .toList();
     } catch (error) {
       if (error is AppFailure) rethrow;
       throw mapDioError(error);

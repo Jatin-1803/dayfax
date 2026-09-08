@@ -4,6 +4,10 @@ import '../../core/theme/customer/customer_colors.dart';
 import '../../core/theme/customer/customer_radius.dart';
 import '../../core/theme/customer/customer_shadows.dart';
 import '../../core/theme/customer/customer_spacing.dart';
+import '../../core/theme/delivery/delivery_colors.dart';
+import '../../core/theme/delivery/delivery_radius.dart';
+import '../../core/theme/delivery/delivery_spacing.dart';
+import '../../core/theme/theme_surface.dart';
 
 enum AppButtonVariant { primary, secondary, outline }
 
@@ -28,55 +32,84 @@ class AppButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final enabled = onPressed != null && !isLoading;
+    final delivery = isDeliveryTheme(context);
+    final radius = delivery ? DeliveryRadius.md : CustomerRadius.full;
+    final gap = delivery ? DeliverySpacing.sm : CustomerSpacing.sm;
+    final onPrimary = delivery ? DeliveryColors.onPrimary : CustomerColors.onPrimary;
+    final primary = delivery ? DeliveryColors.primary : CustomerColors.primary;
+    final primaryContainer =
+        delivery ? DeliveryColors.primaryContainer : CustomerColors.primaryContainer;
+    final minHeight = delivery ? 56.0 : 48.0;
 
     final child = Row(
       mainAxisAlignment: MainAxisAlignment.center,
       mainAxisSize: expanded ? MainAxisSize.max : MainAxisSize.min,
       children: [
         if (isLoading)
-          const SizedBox(
+          SizedBox(
             width: 20,
             height: 20,
-            child: CircularProgressIndicator(strokeWidth: 2, color: CustomerColors.onPrimary),
+            child: CircularProgressIndicator(strokeWidth: 2, color: onPrimary),
           )
         else ...[
           if (icon != null) ...[
             Icon(icon, size: 20),
-            const SizedBox(width: CustomerSpacing.sm),
+            SizedBox(width: gap),
           ],
-          Text(label),
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                label,
+                maxLines: 1,
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
         ],
       ],
+    );
+
+    final shape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(radius),
     );
 
     final button = switch (variant) {
       AppButtonVariant.primary => DecoratedBox(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(CustomerRadius.full),
-            boxShadow: enabled ? CustomerShadows.level2 : null,
+            borderRadius: BorderRadius.circular(radius),
+            boxShadow: enabled && !delivery ? CustomerShadows.level2 : null,
           ),
           child: FilledButton(
             onPressed: enabled ? onPressed : null,
+            style: FilledButton.styleFrom(
+              backgroundColor: primary,
+              foregroundColor: onPrimary,
+              minimumSize: Size.fromHeight(minHeight),
+              shape: shape,
+              elevation: 0,
+            ),
             child: child,
           ),
         ),
       AppButtonVariant.secondary => FilledButton(
           onPressed: enabled ? onPressed : null,
           style: FilledButton.styleFrom(
-            backgroundColor: CustomerColors.primaryContainer.withValues(alpha: 0.15),
-            foregroundColor: CustomerColors.primary,
+            backgroundColor: primaryContainer.withValues(alpha: 0.15),
+            foregroundColor: primary,
+            minimumSize: Size.fromHeight(minHeight),
+            shape: shape,
+            elevation: 0,
           ),
           child: child,
         ),
       AppButtonVariant.outline => OutlinedButton(
           onPressed: enabled ? onPressed : null,
           style: OutlinedButton.styleFrom(
-            foregroundColor: CustomerColors.primary,
-            side: const BorderSide(color: CustomerColors.primary, width: 1.5),
-            minimumSize: const Size.fromHeight(48),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(CustomerRadius.full),
-            ),
+            foregroundColor: primary,
+            side: BorderSide(color: primary, width: 1.5),
+            minimumSize: Size.fromHeight(minHeight),
+            shape: shape,
           ),
           child: child,
         ),

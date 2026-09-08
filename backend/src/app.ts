@@ -15,7 +15,9 @@ import { adminAuthRouter } from './modules/admin-auth/admin-auth.routes.js';
 import { adminRouter } from './modules/admin/admin.routes.js';
 import { adminCatalogRouter } from './modules/admin-catalog/admin-catalog.routes.js';
 import { adminOrdersRouter } from './modules/admin-orders/admin-orders.routes.js';
+import { adminBannersRouter } from './modules/admin-banners/admin-banners.routes.js';
 import { adminStoresRouter } from './modules/admin-stores/admin-stores.routes.js';
+import { bannersRouter } from './modules/banners/banners.routes.js';
 import { adminUploadsRouter } from './modules/admin-uploads/admin-uploads.routes.js';
 import { adminUsersRouter } from './modules/admin-users/admin-users.routes.js';
 import { adminZonesRouter } from './modules/admin-zones/admin-zones.routes.js';
@@ -31,6 +33,7 @@ import {
   adminProductSearchRouter,
   searchAdminRouter,
 } from './modules/search-admin/search-admin.routes.js';
+import { handleRazorpayWebhook } from './modules/payments/razorpay-webhook.controller.js';
 import { storesRouter } from './modules/stores/stores.routes.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -41,6 +44,13 @@ export function createApp() {
 
   app.set('trust proxy', 1);
   app.use(requestContext);
+  app.post(
+    `${env.API_PREFIX}/webhooks/razorpay`,
+    express.raw({ type: 'application/json' }),
+    (req, res, next) => {
+      void handleRazorpayWebhook(req, res).catch(next);
+    },
+  );
   app.use(
     helmet({
       crossOriginResourcePolicy: { policy: 'cross-origin' },
@@ -83,7 +93,8 @@ export function createApp() {
       legacyHeaders: false,
       skip: (req) =>
         req.path.endsWith('/health') ||
-        req.originalUrl.split('?')[0]?.endsWith('/health') === true,
+        req.originalUrl.split('?')[0]?.endsWith('/health') === true ||
+        req.originalUrl.includes('/webhooks/razorpay'),
     }),
   );
 
@@ -97,10 +108,12 @@ export function createApp() {
   api.use('/admin/i18n', i18nAdminRouter);
   api.use('/admin/catalog', adminCatalogRouter);
   api.use('/admin/stores', adminStoresRouter);
+  api.use('/admin/banners', adminBannersRouter);
   api.use('/admin/orders', adminOrdersRouter);
   api.use('/admin/users', adminUsersRouter);
   api.use('/admin/zones', adminZonesRouter);
   api.use('/stores', storesRouter);
+  api.use('/banners', bannersRouter);
   api.use('/categories', categoriesRouter);
   api.use('/products', productsRouter);
   api.use('/admin/search', searchAdminRouter);

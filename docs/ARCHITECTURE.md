@@ -1,9 +1,9 @@
-# Dailyfax Architecture
+# DayFax Architecture
 
 Production-ready local quick-commerce for small towns and villages in India.
 
-**Product name:** Dailyfax  
-**Design source:** `design/` (Stitch export; branded LocalDash in mockups — UI uses Dailyfax)  
+**Product name:** DayFax  
+**Design source:** `design/` (Stitch export; branded LocalDash in mockups — UI uses DayFax)  
 **Customer visual system:** `design/premium_lifestyle_quick_commerce/DESIGN.md`  
 **Delivery partner visual system:** `design/logistics_core/DESIGN.md` (future app; shared auth/API)
 
@@ -12,12 +12,14 @@ Production-ready local quick-commerce for small towns and villages in India.
 ```
 dayfax/
   app/               Single Flutter app (customer + delivery partner)
+  admin/             Web admin SPA (Vite + React + TypeScript)
   backend/           Node.js + TypeScript REST API
   design/            UI source of truth (HTML + PNG + DESIGN.md)
   docs/              Architecture and delivery plan
+  website/           Marketing / legal static site
 ```
 
-No Docker. Local stack: Flutter + Node.js + MySQL (WAMP).
+No Docker. Local stack: Flutter + Node.js + MySQL (WAMP) + admin SPA on Vite.
 
 ## Principles
 
@@ -94,6 +96,10 @@ Phone → OTP → verify → profile → roles from backend.
 
 Roles: `CUSTOMER`, `DELIVERY_PARTNER`, `ADMIN`  
 Customer app only exposes customer features; never trust client for authorization.
+
+### Admin web
+
+Separate Vite + React SPA in `admin/`. Auth is **email + password** against the `admin_users` table (`POST /api/v1/admin/auth/login`). JWT includes `principal: 'admin'` and `roles: ['ADMIN']`. Manages stores, catalog, orders, partners, users, zones, i18n strings, and search ops via `/api/v1/admin/*`.
 
 ## Order lifecycle
 

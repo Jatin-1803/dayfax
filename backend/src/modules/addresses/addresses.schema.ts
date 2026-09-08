@@ -8,6 +8,7 @@ const pincodeSchema = z
 
 const addressFields = {
   label: z.string().trim().min(1).max(40),
+  fullName: z.string().trim().min(2).max(120),
   line1: z.string().trim().min(3).max(255),
   line2: z.string().trim().max(255).optional(),
   landmark: z.string().trim().max(255).optional(),
@@ -29,6 +30,7 @@ export const createAddressSchema = z.object({
 export const updateAddressSchema = z
   .object({
     label: addressFields.label.optional(),
+    fullName: addressFields.fullName.optional(),
     line1: addressFields.line1.optional(),
     line2: addressFields.line2,
     landmark: addressFields.landmark,

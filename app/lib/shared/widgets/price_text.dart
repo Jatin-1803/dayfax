@@ -26,25 +26,39 @@ class PriceText extends StatelessWidget {
         Theme.of(context).textTheme.bodyLarge?.copyWith(
               color: CustomerColors.primary,
               fontWeight: FontWeight.w700,
-            );
+              height: 1.15,
+            ) ??
+        const TextStyle(
+          fontSize: 16,
+          height: 1.15,
+          fontWeight: FontWeight.w700,
+          color: CustomerColors.primary,
+        );
 
     if (mrpPaise == null || mrpPaise! <= paise) {
       return Text(showCurrency ? price : (paise / 100).toStringAsFixed(0), style: baseStyle);
     }
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(price, style: baseStyle),
-        const SizedBox(width: 6),
-        Text(
-          _inr.format(mrpPaise! / 100),
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: CustomerColors.onSurfaceVariant,
-                decoration: TextDecoration.lineThrough,
-              ),
-        ),
-      ],
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: Alignment.centerLeft,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(price, style: baseStyle, maxLines: 1),
+          const SizedBox(width: 6),
+          Text(
+            _inr.format(mrpPaise! / 100),
+            maxLines: 1,
+            style: baseStyle.copyWith(
+              color: CustomerColors.onSurfaceVariant,
+              fontWeight: FontWeight.w500,
+              decoration: TextDecoration.lineThrough,
+              fontSize: (baseStyle.fontSize ?? 13) - 1,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

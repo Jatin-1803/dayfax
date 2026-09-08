@@ -72,6 +72,20 @@ else
   exit 1
 fi
 
+echo "==> Admin SPA build"
+ADMIN_DIR="$APP_DIR/admin"
+ADMIN_DIST="$APP_DIR/admin-dist"
+if [ -f "$ADMIN_DIR/package.json" ]; then
+  cd "$ADMIN_DIR"
+  npm ci
+  VITE_API_BASE_URL="${VITE_API_BASE_URL:-https://backend.dayfax.in/api/v1}" npm run build
+  sudo mkdir -p "$ADMIN_DIST"
+  sudo rsync -a --delete "$ADMIN_DIR/dist/" "$ADMIN_DIST/"
+  sudo chown -R ubuntu:www-data "$ADMIN_DIST"
+else
+  echo "WARN: admin/ missing — skipping admin build"
+fi
+
 echo "==> Sync nginx (dayfax only — tatami untouched)"
 if [ -f "$APP_DIR/scripts/nginx-dayfax.conf" ]; then
   sudo cp "$APP_DIR/scripts/nginx-dayfax.conf" /etc/nginx/sites-available/dayfax
