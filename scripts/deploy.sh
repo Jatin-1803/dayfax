@@ -42,17 +42,13 @@ git for-each-ref --sort=-creatordate --format='%(refname:short)' refs/heads/back
   | tail -n +11 \
   | while read -r old; do git branch -D "$old" || true; done
 
-echo "==> git pull origin ${BRANCH}"
+echo "==> git fetch origin ${BRANCH}"
 git checkout "$BRANCH"
-git reset --hard HEAD
-# Server checkout can pick up leftover copies. Keep secrets and catalog media.
-git clean -fd \
-  -e backend/.env \
-  -e 'backend/public/catalog/**/*.jpg' \
-  -e 'backend/public/catalog/**/*.jpeg' \
-  -e 'backend/public/catalog/**/*.png' \
-  -e 'backend/public/catalog/**/*.webp'
-GIT_TERMINAL_PROMPT=0 git pull origin "$BRANCH"
+# Line-ending noise and leftover copies must not block deploy.
+# reset --hard to origin keeps ignored secrets such as backend/.env.
+GIT_TERMINAL_PROMPT=0 git fetch origin "$BRANCH"
+git reset --hard "origin/${BRANCH}"
+git clean -fd -e backend/.env
 git remote set-url origin "$REPO_URL"
 echo "BACKUP_BRANCH=${BACKUP_BRANCH}"
 
