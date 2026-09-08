@@ -45,6 +45,13 @@ git for-each-ref --sort=-creatordate --format='%(refname:short)' refs/heads/back
 echo "==> git pull origin ${BRANCH}"
 git checkout "$BRANCH"
 git reset --hard HEAD
+# Server checkout can pick up leftover copies. Keep secrets and catalog media.
+git clean -fd \
+  -e backend/.env \
+  -e 'backend/public/catalog/**/*.jpg' \
+  -e 'backend/public/catalog/**/*.jpeg' \
+  -e 'backend/public/catalog/**/*.png' \
+  -e 'backend/public/catalog/**/*.webp'
 GIT_TERMINAL_PROMPT=0 git pull origin "$BRANCH"
 git remote set-url origin "$REPO_URL"
 echo "BACKUP_BRANCH=${BACKUP_BRANCH}"
