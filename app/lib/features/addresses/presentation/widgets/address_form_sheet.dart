@@ -6,6 +6,7 @@ import '../../../../core/i18n/i18n_providers.dart';
 import '../../../../core/theme/customer/customer_colors.dart';
 import '../../../../core/theme/customer/customer_spacing.dart';
 import '../../../../shared/widgets/app_button.dart';
+import '../../../../shared/widgets/app_phone_field.dart';
 import '../../../auth/presentation/auth_view_model.dart';
 import '../../data/location_service.dart';
 import '../../domain/address_models.dart';
@@ -90,6 +91,7 @@ class _AddressFormState extends ConsumerState<AddressForm> {
   late final AddressDraft _draft;
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
+  late final TextEditingController _phoneController;
   late final TextEditingController _line1Controller;
   late final TextEditingController _line2Controller;
   late final TextEditingController _landmarkController;
@@ -99,6 +101,7 @@ class _AddressFormState extends ConsumerState<AddressForm> {
   bool _saving = false;
   bool _locating = false;
   String? _error;
+  String? _phoneError;
 
   @override
   void initState() {
@@ -110,14 +113,25 @@ class _AddressFormState extends ConsumerState<AddressForm> {
     } else {
       _draft = AddressDraft();
     }
-    if (_draft.fullName.trim().isEmpty && widget.initial == null) {
+    if (widget.initial == null) {
       final auth = ref.read(authViewModelProvider);
       if (auth is AuthAuthenticated) {
-        final accountName = auth.session.user.fullName?.trim() ?? '';
-        if (accountName.isNotEmpty) _draft.fullName = accountName;
+        if (_draft.fullName.trim().isEmpty) {
+          final accountName = auth.session.user.fullName?.trim() ?? '';
+          if (accountName.isNotEmpty) _draft.fullName = accountName;
+        }
+        if (_draft.phone.trim().isEmpty) {
+          final accountPhone = auth.session.user.phone?.replaceAll(RegExp(r'\D'), '') ?? '';
+          if (accountPhone.isNotEmpty) _draft.phone = accountPhone;
+          final accountCode = auth.session.user.phoneCountryCode?.trim();
+          if (accountCode != null && accountCode.isNotEmpty) {
+            _draft.phoneCountryCode = accountCode;
+          }
+        }
       }
     }
     _nameController = TextEditingController(text: _draft.fullName);
+    _phoneController = TextEditingController(text: _draft.phone);
     _line1Controller = TextEditingController(text: _draft.line1);
     _line2Controller = TextEditingController(text: _draft.line2);
     _landmarkController = TextEditingController(text: _draft.landmark);
@@ -129,6 +143,7 @@ class _AddressFormState extends ConsumerState<AddressForm> {
   @override
   void dispose() {
     _nameController.dispose();
+    _phoneController.dispose();
     _line1Controller.dispose();
     _line2Controller.dispose();
     _landmarkController.dispose();
@@ -136,6 +151,16 @@ class _AddressFormState extends ConsumerState<AddressForm> {
     _stateController.dispose();
     _pincodeController.dispose();
     super.dispose();
+  }
+
+  bool _validatePhone() {
+    final normalized = _phoneController.text.replaceAll(RegExp(r'\D'), '');
+    if (!RegExp(r'^[6-9]\d{9}$').hasMatch(normalized)) {
+      setState(() => _phoneError = ref.tr('addresses.phone_error'));
+      return false;
+    }
+    setState(() => _phoneError = null);
+    return true;
   }
 
   Future<void> _useCurrentLocation() async {
@@ -177,9 +202,12 @@ class _AddressFormState extends ConsumerState<AddressForm> {
   }
 
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
+    final formOk = _formKey.currentState!.validate();
+    final phoneOk = _validatePhone();
+    if (!formOk || !phoneOk) return;
     _draft
       ..fullName = _nameController.text
+      ..phone = _phoneController.text.replaceAll(RegExp(r'\D'), '')
       ..line1 = _line1Controller.text
       ..line2 = _line2Controller.text
       ..landmark = _landmarkController.text
@@ -274,6 +302,23 @@ class _AddressFormState extends ConsumerState<AddressForm> {
               validator: (value) => (value == null || value.trim().length < 2)
                   ? ref.tr('addresses.full_name_error')
                   : null,
+            ),
+            const SizedBox(height: CustomerSpacing.md),
+            Text(
+              ref.t('addresses.phone'),
+              style: Theme.of(context).textTheme.labelLarge,
+            ),
+            const SizedBox(height: CustomerSpacing.sm),
+            AppPhoneField(
+              controller: _phoneController,
+              countryCode: _draft.phoneCountryCode,
+              hintText: ref.t('auth.phone_hint'),
+              errorText: _phoneError,
+              onChanged: (_) {
+                if (_phoneError != null) {
+                  setState(() => _phoneError = null);
+                }
+              },
             ),
             const SizedBox(height: CustomerSpacing.md),
             DropdownButtonFormField<String>(

@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../../core/config/google_auth_config.dart';
@@ -28,6 +30,11 @@ class GoogleAuthService {
       }
       return idToken;
     } on GoogleSignInException catch (error) {
+      developer.log(
+        'GoogleSignInException code=${error.code} description=${error.description}',
+        name: 'GoogleAuthService',
+        error: error,
+      );
       if (error.code == GoogleSignInExceptionCode.canceled) {
         return null;
       }

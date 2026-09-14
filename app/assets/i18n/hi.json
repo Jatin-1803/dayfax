@@ -320,6 +320,8 @@
   "addresses.label": "लेबल",
   "addresses.full_name": "पूरा नाम",
   "addresses.full_name_error": "पूरा नाम दर्ज करें",
+  "addresses.phone": "फ़ोन नंबर",
+  "addresses.phone_error": "मान्य 10 अंकों का मोबाइल नंबर दर्ज करें",
   "addresses.line1": "पता पंक्ति 1",
   "addresses.line1_error": "मान्य पता दर्ज करें",
   "addresses.line2": "पता पंक्ति 2 (वैकल्पिक)",

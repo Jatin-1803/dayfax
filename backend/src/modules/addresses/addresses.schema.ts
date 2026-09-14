@@ -6,9 +6,17 @@ const pincodeSchema = z
   .regex(/^\d{6}$/, 'Pincode must be 6 digits')
   .optional();
 
+const phoneCountryCode = z.string().trim().min(1).max(8);
+const phone = z
+  .string()
+  .trim()
+  .regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit Indian mobile number');
+
 const addressFields = {
   label: z.string().trim().min(1).max(40),
   fullName: z.string().trim().min(2).max(120),
+  phoneCountryCode: phoneCountryCode.default('+91'),
+  phone,
   line1: z.string().trim().min(3).max(255),
   line2: z.string().trim().max(255).optional(),
   landmark: z.string().trim().max(255).optional(),
@@ -31,6 +39,8 @@ export const updateAddressSchema = z
   .object({
     label: addressFields.label.optional(),
     fullName: addressFields.fullName.optional(),
+    phoneCountryCode: phoneCountryCode.optional(),
+    phone: phone.optional(),
     line1: addressFields.line1.optional(),
     line2: addressFields.line2,
     landmark: addressFields.landmark,

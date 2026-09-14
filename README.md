@@ -41,6 +41,20 @@ API URL auto-selects from build mode:
 | `flutter run` / debug | local → `http://10.0.2.2:3000/api/v1` |
 | `flutter build apk` / release | live → `https://backend.dayfax.in/api/v1` |
 
+**Play Store + Google Sign-In:** Play re-signs the AAB with its own **App signing** certificate. That SHA must be registered, or Google Sign-In fails for Play installs.
+
+Important: the Web `serverClientId` is in GCP project **`dayfax-app-login`**. Create **Android** OAuth clients in that same project (Application type = Android, package `com.dailyfax.customer`, one client per SHA-1). Firebase SHA on project `dayfax` alone is not enough.
+
+1. [Create Android OAuth client](https://console.cloud.google.com/auth/clients/create?project=dayfax-app-login) for **upload** SHA-1 `80:FC:16:20:67:A6:5E:DB:EA:77:1A:8E:07:F6:0D:5C:18:48:C6:4F`
+2. Create another Android client for **debug** SHA-1 `D9:7A:45:AA:20:3E:04:79:55:CD:19:09:AA:35:EE:D7:D8:A2:3D:A3`
+3. After first Play AAB upload, create a third Android client with **Play App signing** SHA-1 from Play Console → App integrity (also run the sync script below for Firebase).
+
+```bash
+python scripts/sync-android-sha-to-firebase.py --sha1 <PLAY_SHA1> --sha256 <PLAY_SHA256> --update-json
+```
+
+Known fingerprints: `app/android/signing-fingerprints.json`.
+
 ```bash
 cd app
 flutter pub get

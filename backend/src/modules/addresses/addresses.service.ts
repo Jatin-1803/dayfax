@@ -9,6 +9,8 @@ function mapAddress(row: AddressRow) {
     id: row.id,
     label: row.label,
     fullName: row.full_name,
+    phoneCountryCode: row.phone_country_code,
+    phone: row.phone,
     line1: row.line1,
     line2: row.line2,
     landmark: row.landmark,
@@ -60,6 +62,8 @@ export class AddressesService {
           deliveryZoneId,
           label: input.label,
           fullName: input.fullName,
+          phoneCountryCode: input.phoneCountryCode,
+          phone: input.phone,
           line1: input.line1,
           line2: input.line2,
           landmark: input.landmark,
@@ -84,6 +88,8 @@ export class AddressesService {
     const fields: Record<string, unknown> = {};
     if (input.label !== undefined) fields.label = input.label;
     if (input.fullName !== undefined) fields.full_name = input.fullName;
+    if (input.phoneCountryCode !== undefined) fields.phone_country_code = input.phoneCountryCode;
+    if (input.phone !== undefined) fields.phone = input.phone;
     if (input.line1 !== undefined) fields.line1 = input.line1;
     if (input.line2 !== undefined) fields.line2 = input.line2 ?? null;
     if (input.landmark !== undefined) fields.landmark = input.landmark ?? null;

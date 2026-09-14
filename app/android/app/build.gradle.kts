@@ -39,6 +39,11 @@ android {
         versionName = flutter.versionName
     }
 
+    // Release APK/AAB is signed with upload-keystore.jks (see key.properties).
+    // Play Store then re-signs with Google Play App Signing. Google Sign-In needs
+    // EVERY signing cert SHA in Firebase — debug, upload, and play_app_signing.
+    // Source of truth: ../signing-fingerprints.json
+    // Sync: python scripts/sync-android-sha-to-firebase.py
     signingConfigs {
         create("release") {
             if (keystorePropertiesFile.exists()) {

@@ -6,6 +6,8 @@ class UserAddress extends Equatable {
     required this.label,
     required this.line1,
     this.fullName,
+    this.phoneCountryCode,
+    this.phone,
     required this.city,
     required this.isDefault,
     this.line2,
@@ -21,6 +23,8 @@ class UserAddress extends Equatable {
   final String id;
   final String label;
   final String? fullName;
+  final String? phoneCountryCode;
+  final String? phone;
   final String line1;
   final String? line2;
   final String? landmark;
@@ -32,6 +36,13 @@ class UserAddress extends Equatable {
   final String? serviceAreaId;
   final String? deliveryZoneId;
   final bool isDefault;
+
+  String get displayPhone {
+    final digits = phone?.replaceAll(RegExp(r'\D'), '') ?? '';
+    if (digits.isEmpty) return '';
+    final code = (phoneCountryCode ?? '+91').trim();
+    return '$code $digits';
+  }
 
   String get summaryLine {
     final parts = <String>[
@@ -62,6 +73,8 @@ class UserAddress extends Equatable {
       id: json['id'] as String,
       label: json['label'] as String? ?? 'Home',
       fullName: json['fullName'] as String?,
+      phoneCountryCode: json['phoneCountryCode'] as String?,
+      phone: json['phone'] as String?,
       line1: json['line1'] as String,
       line2: json['line2'] as String?,
       landmark: json['landmark'] as String?,
@@ -77,7 +90,7 @@ class UserAddress extends Equatable {
   }
 
   @override
-  List<Object?> get props => [id, label, line1, isDefault];
+  List<Object?> get props => [id, label, line1, phone, isDefault];
 }
 
 class AddressDraft {
@@ -85,6 +98,8 @@ class AddressDraft {
     this.id,
     this.label = 'Home',
     this.fullName = '',
+    this.phoneCountryCode = '+91',
+    this.phone = '',
     this.line1 = '',
     this.line2 = '',
     this.landmark = '',
@@ -99,6 +114,8 @@ class AddressDraft {
   final String? id;
   String label;
   String fullName;
+  String phoneCountryCode;
+  String phone;
   String line1;
   String line2;
   String landmark;
@@ -114,6 +131,10 @@ class AddressDraft {
       id: address.id,
       label: address.label,
       fullName: address.fullName ?? '',
+      phoneCountryCode: address.phoneCountryCode?.trim().isNotEmpty == true
+          ? address.phoneCountryCode!.trim()
+          : '+91',
+      phone: address.phone ?? '',
       line1: address.line1,
       line2: address.line2 ?? '',
       landmark: address.landmark ?? '',
@@ -130,6 +151,8 @@ class AddressDraft {
     return {
       'label': label.trim(),
       'fullName': fullName.trim(),
+      'phoneCountryCode': phoneCountryCode.trim().isEmpty ? '+91' : phoneCountryCode.trim(),
+      'phone': phone.replaceAll(RegExp(r'\D'), ''),
       'line1': line1.trim(),
       if (line2.trim().isNotEmpty) 'line2': line2.trim(),
       if (landmark.trim().isNotEmpty) 'landmark': landmark.trim(),

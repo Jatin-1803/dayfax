@@ -477,6 +477,11 @@ export const UI_TRANSLATION_SEED: Record<string, { en: string; hi: string }> = {
   'addresses.label': { en: 'Label', hi: 'लेबल' },
   'addresses.full_name': { en: 'Full name', hi: 'पूरा नाम' },
   'addresses.full_name_error': { en: 'Enter your full name', hi: 'पूरा नाम दर्ज करें' },
+  'addresses.phone': { en: 'Phone number', hi: 'फ़ोन नंबर' },
+  'addresses.phone_error': {
+    en: 'Enter a valid 10-digit mobile number',
+    hi: 'मान्य 10 अंकों का मोबाइल नंबर दर्ज करें',
+  },
   'addresses.line1': { en: 'Address line 1', hi: 'पता पंक्ति 1' },
   'addresses.line1_error': { en: 'Enter a valid address', hi: 'मान्य पता दर्ज करें' },
   'addresses.line2': { en: 'Address line 2 (optional)', hi: 'पता पंक्ति 2 (वैकल्पिक)' },

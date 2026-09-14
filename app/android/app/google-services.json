@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "843431847120-93b5mnjvvpgko3kngt65r7ab2fssbfov.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.dailyfax.customer",
+            "certificate_hash": "80fc162067a65edbea771a8e07f60d5c1848c64f"
+          }
+        },
+        {
           "client_id": "843431847120-602npqj8o479691d0g0r1ncmqa4halkj.apps.googleusercontent.com",
           "client_type": 3
         }

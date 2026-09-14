@@ -9,6 +9,8 @@ export interface AddressRow {
   delivery_zone_id: string | null;
   label: string;
   full_name: string | null;
+  phone_country_code: string | null;
+  phone: string | null;
   line1: string;
   line2: string | null;
   landmark: string | null;
@@ -20,13 +22,16 @@ export interface AddressRow {
   is_default: number;
 }
 
+const ADDRESS_SELECT = `id, user_id, service_area_id, delivery_zone_id, label, full_name,
+              phone_country_code, phone, line1, line2, landmark,
+              city, state, pincode, latitude, longitude, is_default`;
+
 export class AddressesRepository {
   constructor(private readonly db: Pool = getPool()) {}
 
   async listByUser(userId: string): Promise<AddressRow[]> {
     const [rows] = await this.db.query<RowDataPacket[]>(
-      `SELECT id, user_id, service_area_id, delivery_zone_id, label, full_name, line1, line2, landmark,
-              city, state, pincode, latitude, longitude, is_default
+      `SELECT ${ADDRESS_SELECT}
        FROM addresses
        WHERE user_id = ? AND deleted_at IS NULL
        ORDER BY is_default DESC, updated_at DESC`,
@@ -37,8 +42,7 @@ export class AddressesRepository {
 
   async findByIdForUser(id: string, userId: string): Promise<AddressRow | null> {
     const [rows] = await this.db.query<RowDataPacket[]>(
-      `SELECT id, user_id, service_area_id, delivery_zone_id, label, full_name, line1, line2, landmark,
-              city, state, pincode, latitude, longitude, is_default
+      `SELECT ${ADDRESS_SELECT}
        FROM addresses
        WHERE id = ? AND user_id = ? AND deleted_at IS NULL
        LIMIT 1`,
@@ -83,6 +87,8 @@ export class AddressesRepository {
       deliveryZoneId: string | null;
       label: string;
       fullName: string;
+      phoneCountryCode: string;
+      phone: string;
       line1: string;
       line2?: string;
       landmark?: string;
@@ -98,9 +104,10 @@ export class AddressesRepository {
     const id = createId();
     await conn.query(
       `INSERT INTO addresses (
-         id, user_id, service_area_id, delivery_zone_id, label, full_name, line1, line2, landmark,
+         id, user_id, service_area_id, delivery_zone_id, label, full_name,
+         phone_country_code, phone, line1, line2, landmark,
          city, state, pincode, latitude, longitude, is_default
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         input.userId,
@@ -108,6 +115,8 @@ export class AddressesRepository {
         input.deliveryZoneId,
         input.label,
         input.fullName,
+        input.phoneCountryCode,
+        input.phone,
         input.line1,
         input.line2 ?? null,
         input.landmark ?? null,

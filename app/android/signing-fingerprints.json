@@ -1,0 +1,31 @@
+{
+  "packageName": "com.dailyfax.customer",
+  "firebaseProjectId": "dayfax",
+  "firebaseAndroidAppId": "1:483191032228:android:2edc7fe8694ed180785931",
+  "googleCloudOAuthProjectId": "dayfax-app-login",
+  "webClientId": "843431847120-602npqj8o479691d0g0r1ncmqa4halkj.apps.googleusercontent.com",
+  "notes": [
+    "Google Sign-In serverClientId (Web) lives in GCP project dayfax-app-login.",
+    "Android OAuth clients MUST be created in the SAME project (dayfax-app-login), not only Firebase dayfax SHA list.",
+    "Create one Android client per signing cert: package com.dailyfax.customer + SHA-1."
+  ],
+  "fingerprints": [
+    {
+      "name": "debug",
+      "sha1": "d97a45aa203e047955cd1909aa35eed7d8a23da3",
+      "sha256": "254034ddf9e00366ea6e49db2701015acd6a782400a410e9a82ee1c5a67270ff"
+    },
+    {
+      "name": "upload",
+      "sha1": "80fc162067a65edbea771a8e07f60d5c1848c64f",
+      "sha256": "cfc6f5f2f27b79d3392c042ba4d76798991df43d1551f3c36dfc43cbed7b170f",
+      "note": "Local release APK/AAB signed with app/android/upload-keystore.jks"
+    },
+    {
+      "name": "play_app_signing",
+      "sha1": "",
+      "sha256": "",
+      "note": "REQUIRED for Play Store installs. Play Console -> App integrity -> App signing key certificate."
+    }
+  ]
+}

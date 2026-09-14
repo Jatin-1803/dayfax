@@ -6,18 +6,43 @@ describe('addresses schema', () => {
   it('accepts a valid address', () => {
     const parsed = createAddressSchema.parse({
       fullName: 'Rahul Sharma',
+      phone: '9876543210',
       line1: '12 Market Road',
       city: 'Launch Town',
       pincode: '226001',
     });
     expect(parsed.label).toBe('Home');
     expect(parsed.fullName).toBe('Rahul Sharma');
+    expect(parsed.phone).toBe('9876543210');
+    expect(parsed.phoneCountryCode).toBe('+91');
     expect(parsed.pincode).toBe('226001');
   });
 
   it('requires a full name', () => {
     expect(() =>
       createAddressSchema.parse({
+        phone: '9876543210',
+        line1: '12 Market Road',
+        city: 'Launch Town',
+      }),
+    ).toThrow();
+  });
+
+  it('requires a phone number', () => {
+    expect(() =>
+      createAddressSchema.parse({
+        fullName: 'Rahul Sharma',
+        line1: '12 Market Road',
+        city: 'Launch Town',
+      }),
+    ).toThrow();
+  });
+
+  it('rejects invalid phone', () => {
+    expect(() =>
+      createAddressSchema.parse({
+        fullName: 'Rahul Sharma',
+        phone: '12345',
         line1: '12 Market Road',
         city: 'Launch Town',
       }),
@@ -28,6 +53,7 @@ describe('addresses schema', () => {
     expect(() =>
       createAddressSchema.parse({
         fullName: 'Rahul Sharma',
+        phone: '9876543210',
         line1: '12 Market Road',
         city: 'Launch Town',
         pincode: '12',

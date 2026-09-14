@@ -8,6 +8,8 @@ void main() {
       'id': 'a1',
       'label': 'Home',
       'fullName': 'Rahul Sharma',
+      'phoneCountryCode': '+91',
+      'phone': '9876543210',
       'line1': '12 Market Road',
       'line2': null,
       'city': 'Launch Town',
@@ -16,8 +18,10 @@ void main() {
     });
     expect(address.summaryLine, contains('12 Market Road'));
     expect(address.fullName, 'Rahul Sharma');
+    expect(address.displayPhone, '+91 9876543210');
     expect(AddressDraft.fromAddress(address).city, 'Launch Town');
     expect(AddressDraft.fromAddress(address).toJson()['fullName'], 'Rahul Sharma');
+    expect(AddressDraft.fromAddress(address).toJson()['phone'], '9876543210');
   });
 
   test('Cart parses items and totals', () {

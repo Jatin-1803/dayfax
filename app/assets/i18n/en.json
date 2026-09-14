@@ -320,6 +320,8 @@
   "addresses.label": "Label",
   "addresses.full_name": "Full name",
   "addresses.full_name_error": "Enter your full name",
+  "addresses.phone": "Phone number",
+  "addresses.phone_error": "Enter a valid 10-digit mobile number",
   "addresses.line1": "Address line 1",
   "addresses.line1_error": "Enter a valid address",
   "addresses.line2": "Address line 2 (optional)",

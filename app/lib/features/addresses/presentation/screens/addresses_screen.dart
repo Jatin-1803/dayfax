@@ -168,6 +168,15 @@ class _AddressCard extends StatelessWidget {
                     color: CustomerColors.onSurfaceVariant,
                   ),
             ),
+            if (address.displayPhone.isNotEmpty) ...[
+              const SizedBox(height: CustomerSpacing.xs),
+              Text(
+                address.displayPhone,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: CustomerColors.onSurfaceVariant,
+                    ),
+              ),
+            ],
             if (onDefault != null) ...[
               const SizedBox(height: CustomerSpacing.md),
               Align(
