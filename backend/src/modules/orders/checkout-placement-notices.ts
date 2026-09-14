@@ -47,7 +47,7 @@ export function partnerClaimOrderIdsAfterPayment(input: {
 export function isDeferredCodSiblingPayment(payment: {
   method: string;
   status: string;
-  provider: string;
+  provider: string | null;
 }): boolean {
   return (
     payment.method === 'COD' &&
