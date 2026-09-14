@@ -106,6 +106,13 @@ class CartViewModel extends Notifier<CartUiState> {
       id: previous.id,
       storeId: previous.storeId,
       serviceAreaId: previous.serviceAreaId,
+      isLocalShop: previous.isLocalShop,
+      localShopSubtotalPaise: nextItems
+          .where((item) => item.isLocalShop)
+          .fold<int>(0, (sum, item) => sum + item.lineTotalPaise),
+      regularSubtotalPaise: nextItems
+          .where((item) => !item.isLocalShop)
+          .fold<int>(0, (sum, item) => sum + item.lineTotalPaise),
       items: nextItems,
       itemCount: nextItems.fold<int>(0, (sum, item) => sum + item.quantity),
       subtotalPaise: nextItems.fold<int>(0, (sum, item) => sum + item.lineTotalPaise),

@@ -4,10 +4,14 @@ import '../../../core/errors/app_failure.dart';
 import '../data/delivery_repository.dart';
 import '../domain/delivery_models.dart';
 
-final deliveryStatsProvider =
-    AsyncNotifierProvider<DeliveryStatsNotifier, DeliveryStats>(DeliveryStatsNotifier.new);
+final deliveryStatsProvider = AsyncNotifierProvider.family<
+    DeliveryStatsNotifier, DeliveryStats, String>(DeliveryStatsNotifier.new);
 
 class DeliveryStatsNotifier extends AsyncNotifier<DeliveryStats> {
+  DeliveryStatsNotifier(this.date);
+
+  final String date;
+
   @override
   Future<DeliveryStats> build() => _fetch();
 
@@ -17,7 +21,7 @@ class DeliveryStatsNotifier extends AsyncNotifier<DeliveryStats> {
   }
 
   Future<DeliveryStats> _fetch() {
-    return ref.read(deliveryRepositoryProvider).fetchStats();
+    return ref.read(deliveryRepositoryProvider).fetchStats(date: date);
   }
 }
 
@@ -58,9 +62,13 @@ class DeliveryJobsListState {
   }
 }
 
-class DeliveryJobsListNotifier extends FamilyNotifier<DeliveryJobsListState, DeliveryJobsTab> {
+class DeliveryJobsListNotifier extends Notifier<DeliveryJobsListState> {
+  DeliveryJobsListNotifier(this.query);
+
+  final DeliveryJobsQuery query;
+
   @override
-  DeliveryJobsListState build(DeliveryJobsTab arg) {
+  DeliveryJobsListState build() {
     Future.microtask(() => load(reset: true));
     return const DeliveryJobsListState(isLoading: true);
   }
@@ -75,8 +83,9 @@ class DeliveryJobsListNotifier extends FamilyNotifier<DeliveryJobsListState, Del
     );
     try {
       final page = await ref.read(deliveryRepositoryProvider).listJobs(
-            tab: arg,
+            tab: query.tab,
             page: nextPage,
+            date: query.tab == DeliveryJobsTab.completed ? query.date : null,
           );
       state = state.copyWith(
         items: reset ? page.items : [...state.items, ...page.items],
@@ -92,6 +101,12 @@ class DeliveryJobsListNotifier extends FamilyNotifier<DeliveryJobsListState, Del
         isLoadingMore: false,
         errorMessage: failure.message,
       );
+    } catch (_) {
+      state = state.copyWith(
+        isLoading: false,
+        isLoadingMore: false,
+        errorMessage: 'error.generic',
+      );
     }
   }
 
@@ -99,13 +114,17 @@ class DeliveryJobsListNotifier extends FamilyNotifier<DeliveryJobsListState, Del
 }
 
 final deliveryJobsListProvider = NotifierProvider.family<
-    DeliveryJobsListNotifier, DeliveryJobsListState, DeliveryJobsTab>(
+    DeliveryJobsListNotifier, DeliveryJobsListState, DeliveryJobsQuery>(
   DeliveryJobsListNotifier.new,
 );
 
-class DeliveryJobDetailNotifier extends FamilyNotifier<AsyncValue<DeliveryJob>, String> {
+class DeliveryJobDetailNotifier extends Notifier<AsyncValue<DeliveryJob>> {
+  DeliveryJobDetailNotifier(this.arg);
+
+  final String arg;
+
   @override
-  AsyncValue<DeliveryJob> build(String arg) {
+  AsyncValue<DeliveryJob> build() {
     Future.microtask(load);
     return const AsyncValue.loading();
   }
@@ -128,7 +147,5 @@ final deliveryJobDetailProvider = NotifierProvider.family<
 
 void invalidateDeliveryData(WidgetRef ref) {
   ref.invalidate(deliveryStatsProvider);
-  for (final tab in DeliveryJobsTab.values) {
-    ref.invalidate(deliveryJobsListProvider(tab));
-  }
+  ref.invalidate(deliveryJobsListProvider);
 }

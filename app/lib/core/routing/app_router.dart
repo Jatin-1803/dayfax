@@ -6,7 +6,10 @@ import '../../features/addresses/domain/address_models.dart';
 import '../../features/addresses/presentation/screens/addresses_screen.dart';
 import '../../features/auth/presentation/auth_view_model.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
+import '../../features/auth/presentation/screens/login_method_screen.dart';
 import '../../features/auth/presentation/screens/otp_screen.dart';
+import '../../features/auth/presentation/screens/create_password_screen.dart';
+import '../../features/auth/presentation/screens/password_login_screen.dart';
 import '../../features/auth/presentation/screens/partner_login_screen.dart';
 import '../../features/auth/presentation/screens/partner_otp_screen.dart';
 import '../../features/cart/presentation/screens/cart_screen.dart';
@@ -27,6 +30,7 @@ import '../../features/notifications/presentation/screens/notifications_screen.d
 import '../../features/orders/presentation/screens/checkout_screen.dart';
 import '../../features/orders/presentation/screens/order_confirmed_screen.dart';
 import '../../features/orders/presentation/screens/order_detail_screen.dart';
+import '../../features/support/presentation/screens/support_chat_screen.dart';
 import '../../features/orders/presentation/screens/orders_screen.dart';
 import '../../features/orders/presentation/screens/track_order_screen.dart';
 import '../i18n/i18n_providers.dart';
@@ -46,8 +50,19 @@ String homePathForRole(AppRole role) {
   };
 }
 
+void navigateAfterCustomerAuth(BuildContext context, WidgetRef ref) {
+  if (ref.read(pendingPasswordSetupProvider)) {
+    context.go('/login/create-password');
+    return;
+  }
+  context.go(homePathForRole(ref.read(appRoleProvider)));
+}
+
 bool _isAuthRoute(String loc) {
   return loc == '/login' ||
+      loc == '/login/method' ||
+      loc == '/login/password' ||
+      loc == '/login/create-password' ||
       loc == '/otp' ||
       loc == '/partner/login' ||
       loc == '/partner/otp';
@@ -61,6 +76,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   final authGate = ValueNotifier<int>(0);
 
   ref.listen<bool?>(isAuthenticatedProvider, (_, _) {
+    authGate.value++;
+  });
+
+  ref.listen<bool>(pendingPasswordSetupProvider, (_, _) {
     authGate.value++;
   });
 
@@ -93,6 +112,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       if (isAuthenticated == null) return null;
 
+      final pendingPassword = ref.read(pendingPasswordSetupProvider);
+
+      if (pendingPassword && loc != '/login/create-password') {
+        return '/login/create-password';
+      }
+
       if (!isAuthenticated && !loggingIn) {
         return '/login';
       }
@@ -113,6 +138,27 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/login',
         builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: '/login/method',
+        builder: (context, state) {
+          final phone = state.extra as String? ?? '';
+          return LoginMethodScreen(phone: phone);
+        },
+      ),
+      GoRoute(
+        path: '/login/password',
+        builder: (context, state) {
+          final phone = state.extra as String? ?? '';
+          return PasswordLoginScreen(phone: phone);
+        },
+      ),
+      GoRoute(
+        path: '/login/create-password',
+        builder: (context, state) {
+          final phone = state.extra as String?;
+          return CreatePasswordScreen(phone: phone);
+        },
       ),
       GoRoute(
         path: '/otp',
@@ -178,8 +224,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/partner/history',
-                builder: (context, state) =>
-                    const DeliveriesListScreen(initialTab: 'completed'),
+                builder: (context, state) {
+                  final date = state.uri.queryParameters['date'];
+                  return DeliveriesListScreen(
+                    initialTab: 'completed',
+                    initialDate: date,
+                    filterCompletedByDate: true,
+                  );
+                },
               ),
             ],
           ),
@@ -274,6 +326,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                         builder: (context, state) {
                           final id = state.pathParameters['idOrNumber'] ?? '';
                           return TrackOrderScreen(idOrNumber: id);
+                        },
+                      ),
+                      GoRoute(
+                        path: 'support',
+                        builder: (context, state) {
+                          final id = state.pathParameters['idOrNumber'] ?? '';
+                          return SupportChatScreen(idOrNumber: id);
                         },
                       ),
                     ],

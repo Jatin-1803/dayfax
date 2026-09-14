@@ -43,6 +43,37 @@ class OrdersRepository {
     }
   }
 
+  Future<void> abandonPayment(String orderId) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/orders/$orderId/payments/abandon',
+      );
+      final body = response.data;
+      if (body == null || body['success'] != true) {
+        throw const ServerFailure();
+      }
+    } catch (error) {
+      if (error is AppFailure) rethrow;
+      throw mapDioError(error);
+    }
+  }
+
+  Future<OnlinePaymentStart> startOnlinePayment(String orderId) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/orders/$orderId/payments/online',
+      );
+      final body = response.data;
+      if (body == null || body['success'] != true) {
+        throw const ServerFailure();
+      }
+      return OnlinePaymentStart.fromJson(body['data'] as Map<String, dynamic>);
+    } catch (error) {
+      if (error is AppFailure) rethrow;
+      throw mapDioError(error);
+    }
+  }
+
   Future<CustomerOrder> verifyPayment({
     required String orderId,
     required String razorpayOrderId,
@@ -89,6 +120,20 @@ class OrdersRepository {
   Future<CustomerOrder> getOne(String idOrNumber) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>('/orders/$idOrNumber');
+      final body = response.data;
+      if (body == null || body['success'] != true) {
+        throw const ServerFailure();
+      }
+      return CustomerOrder.fromJson(body['data'] as Map<String, dynamic>);
+    } catch (error) {
+      if (error is AppFailure) rethrow;
+      throw mapDioError(error);
+    }
+  }
+
+  Future<CustomerOrder> cancel(String idOrNumber) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>('/orders/$idOrNumber/cancel');
       final body = response.data;
       if (body == null || body['success'] != true) {
         throw const ServerFailure();

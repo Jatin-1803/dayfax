@@ -20,6 +20,7 @@ export function mapStorePublic(row: StoreRow) {
     latitude: row.latitude != null ? Number(row.latitude) : null,
     longitude: row.longitude != null ? Number(row.longitude) : null,
     isPopular: Boolean(row.is_popular),
+    onlinePaymentOnly: Boolean(row.online_payment_only),
     isActive: Boolean(row.is_active),
     addressSummary: [
       row.address_line1,

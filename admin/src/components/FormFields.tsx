@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { ApiError, getStoredTokens } from '../api/client';
+import { ApiError, authorizedFetch } from '../api/client';
 import { ImageCropDialog, type ImageCropShape } from './ImageCropDialog';
 
 const API_BASE =
@@ -55,10 +55,8 @@ export function ImageUploadField({
     try {
       const form = new FormData();
       form.append('file', file);
-      const { accessToken } = getStoredTokens();
-      const res = await fetch(`${API_BASE}/admin/uploads/image`, {
+      const res = await authorizedFetch('/admin/uploads/image', {
         method: 'POST',
-        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
         body: form,
       });
       const json = (await res.json()) as {
@@ -136,12 +134,14 @@ export function MoneyInput({
   onChange,
   required,
   min = '0',
+  hint,
 }: {
   label: string;
   valueRupees: string;
   onChange: (v: string) => void;
   required?: boolean;
   min?: string;
+  hint?: string;
 }) {
   return (
     <div className="field">
@@ -154,6 +154,7 @@ export function MoneyInput({
         value={valueRupees}
         onChange={(e) => onChange(e.target.value)}
       />
+      {hint ? <span className="hint">{hint}</span> : null}
     </div>
   );
 }

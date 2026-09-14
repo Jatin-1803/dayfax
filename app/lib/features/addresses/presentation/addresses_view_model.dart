@@ -13,15 +13,16 @@ class AddressesViewModel extends Notifier<AsyncValue<List<UserAddress>>> {
 
   Future<void> load() async {
     // Keep previous addresses visible so the picker does not flash forever.
-    state = AsyncValue<List<UserAddress>>.loading().copyWithPrevious(state);
+    final previous = state.asData?.value;
+    if (previous == null) {
+      state = const AsyncValue.loading();
+    }
     try {
       final items = await ref.read(addressesRepositoryProvider).list();
       state = AsyncValue.data(items);
     } on AppFailure catch (failure) {
-      state = AsyncValue<List<UserAddress>>.error(
-        failure,
-        StackTrace.current,
-      ).copyWithPrevious(state);
+      if (previous != null) return;
+      state = AsyncValue.error(failure, StackTrace.current);
     }
   }
 

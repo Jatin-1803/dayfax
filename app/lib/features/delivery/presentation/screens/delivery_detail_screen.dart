@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -74,10 +75,20 @@ class _DeliveryDetailScreenState extends ConsumerState<DeliveryDetailScreen>
   }
 
   Future<void> _acceptOrder(DeliveryJob job) {
+    if (job.isReturnPickup && job.returnRequestId != null) {
+      return _runAction(
+        () => ref.read(deliveryRepositoryProvider).acceptReturn(job.returnRequestId!),
+      );
+    }
     return _runAction(() => ref.read(deliveryRepositoryProvider).acceptOrder(job.orderId));
   }
 
   Future<void> _acceptAssigned(DeliveryJob job) {
+    if (job.isReturnPickup && job.returnRequestId != null) {
+      return _runAction(
+        () => ref.read(deliveryRepositoryProvider).acceptReturn(job.returnRequestId!),
+      );
+    }
     final assignmentId = job.assignment!.id;
     return _runAction(() => ref.read(deliveryRepositoryProvider).acceptJob(assignmentId));
   }
@@ -94,8 +105,8 @@ class _DeliveryDetailScreenState extends ConsumerState<DeliveryDetailScreen>
 
   Future<void> _reject(DeliveryJob job) async {
     final note = await _showNoteDialog(
-      title: ref.tr('delivery.reject_title'),
-      message: ref.tr('delivery.reject_message'),
+      title: ref.tr(job.isReturnPickup ? 'delivery.reject_pickup_title' : 'delivery.reject_title'),
+      message: ref.tr(job.isReturnPickup ? 'delivery.reject_pickup_message' : 'delivery.reject_message'),
       confirmLabel: ref.tr('delivery.reject'),
       destructive: true,
     );
@@ -113,26 +124,18 @@ class _DeliveryDetailScreenState extends ConsumerState<DeliveryDetailScreen>
   }
 
   Future<void> _complete(DeliveryJob job) async {
-    final otp = await showModalBottomSheet<String>(
+    final confirmed = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
+      isDismissible: false,
+      enableDrag: false,
       backgroundColor: DeliveryColors.surfaceContainerLowest,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(DeliveryRadius.lg)),
       ),
       builder: (sheetContext) => _ConfirmDeliverySheet(job: job),
     );
-    if (otp == null || otp.length != 4 || !mounted) return;
-
-    final assignmentId = job.assignment!.id;
-    await _runAction(
-      () => ref.read(deliveryRepositoryProvider).updateStatus(
-            assignmentId: assignmentId,
-            status: 'COMPLETED',
-            deliveryOtp: otp,
-          ),
-    );
-    if (!mounted || _actionError != null) return;
+    if (confirmed != true || !mounted) return;
     context.go('/partner/jobs/${job.detailRouteId}/success');
   }
 
@@ -156,7 +159,7 @@ class _DeliveryDetailScreenState extends ConsumerState<DeliveryDetailScreen>
     if (!mounted) return;
     if (paid == true) {
       setState(() => _paymentStatusKey = 'delivery.payment_received');
-      final updated = ref.read(deliveryJobDetailProvider(widget.idOrOrderId)).valueOrNull;
+      final updated = ref.read(deliveryJobDetailProvider(widget.idOrOrderId)).value;
       if (updated != null && updated.otpAllowed) {
         await _complete(updated);
       }
@@ -202,8 +205,8 @@ class _DeliveryDetailScreenState extends ConsumerState<DeliveryDetailScreen>
     }
   }
 
-  Future<void> _openShopMap(DeliveryJob job) async {
-    final opened = await PartnerNavigation.openShopMap(job.store);
+  Future<void> _openShopMap(DeliveryStore store) async {
+    final opened = await PartnerNavigation.openShopMap(store);
     if (!opened && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(ref.tr('delivery.maps_failed'))),
@@ -222,8 +225,8 @@ class _DeliveryDetailScreenState extends ConsumerState<DeliveryDetailScreen>
     }
   }
 
-  Future<void> _callShop(DeliveryJob job) async {
-    final opened = await PartnerNavigation.callShop(job.store);
+  Future<void> _callShop(DeliveryStore store) async {
+    final opened = await PartnerNavigation.callShop(store);
     if (!opened && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(ref.tr('delivery.call_failed'))),
@@ -281,7 +284,16 @@ class _DeliveryDetailScreenState extends ConsumerState<DeliveryDetailScreen>
 
     return Scaffold(
       backgroundColor: DeliveryColors.background,
-      appBar: AppBar(title: Text(ref.t('delivery.order_details'))),
+      appBar: AppBar(
+        title: Text(
+          asyncJob.maybeWhen(
+            data: (job) => ref.t(
+              job.isReturnPickup ? 'delivery.return_pickup_title' : 'delivery.order_details',
+            ),
+            orElse: () => ref.t('delivery.order_details'),
+          ),
+        ),
+      ),
       body: asyncJob.when(
         loading: () => const OrderDetailSkeleton(),
         error: (error, _) => ErrorState(
@@ -303,29 +315,38 @@ class _DeliveryDetailScreenState extends ConsumerState<DeliveryDetailScreen>
           onCheckPayment: () => _checkPayment(job),
           onReject: () => _reject(job),
           onOpenMap: () => _openMap(job),
-          onOpenShopMap: () => _openShopMap(job),
+          onOpenShopMap: () => _openShopMap(job.store),
           onCallCustomer: () => _callCustomer(job),
-          onCallShop: () => _callShop(job),
+          onCallShop: () => _callShop(job.store),
+          onOpenLocalShopMap: job.localShop == null
+              ? null
+              : () => _openShopMap(job.localShop!),
+          onCallLocalShop: job.localShop == null
+              ? null
+              : () => _callShop(job.localShop!),
         ),
       ),
     );
   }
 }
 
-class _ConfirmDeliverySheet extends StatefulWidget {
+class _ConfirmDeliverySheet extends ConsumerStatefulWidget {
   const _ConfirmDeliverySheet({required this.job});
 
   final DeliveryJob job;
 
   @override
-  State<_ConfirmDeliverySheet> createState() => _ConfirmDeliverySheetState();
+  ConsumerState<_ConfirmDeliverySheet> createState() => _ConfirmDeliverySheetState();
 }
 
-class _ConfirmDeliverySheetState extends State<_ConfirmDeliverySheet> {
+class _ConfirmDeliverySheetState extends ConsumerState<_ConfirmDeliverySheet> {
   final List<TextEditingController> _controllers =
       List.generate(4, (_) => TextEditingController());
   final List<FocusNode> _focusNodes = List.generate(4, (_) => FocusNode());
-  String? _localError;
+  String? _errorKey;
+  Map<String, String>? _errorParams;
+  bool _isSubmitting = false;
+  bool _locked = false;
 
   @override
   void dispose() {
@@ -342,8 +363,14 @@ class _ConfirmDeliverySheetState extends State<_ConfirmDeliverySheet> {
 
   bool get _isComplete => _otp.length == 4 && RegExp(r'^\d{4}$').hasMatch(_otp);
 
+  bool get _canEdit => !_isSubmitting && !_locked;
+
   void _onDigitChanged(int index, String value) {
-    setState(() => _localError = null);
+    if (!_canEdit) return;
+    if (value.replaceAll(RegExp(r'\D'), '').isNotEmpty) {
+      _errorKey = null;
+      _errorParams = null;
+    }
     final digits = value.replaceAll(RegExp(r'\D'), '');
     if (digits.length > 1) {
       for (var i = 0; i < 4; i++) {
@@ -360,26 +387,80 @@ class _ConfirmDeliverySheetState extends State<_ConfirmDeliverySheet> {
     setState(() {});
   }
 
-  void _submit() {
+  void _clearOtp() {
+    for (final controller in _controllers) {
+      controller.clear();
+    }
+    _focusNodes.first.requestFocus();
+  }
+
+  void _showError(String key, {Map<String, String>? params, bool lock = false}) {
+    setState(() {
+      _isSubmitting = false;
+      _locked = lock;
+      _errorKey = key;
+      _errorParams = params;
+    });
+    if (!lock) _clearOtp();
+  }
+
+  Future<void> _submit() async {
+    if (_isSubmitting || _locked) return;
     if (!_isComplete) {
-      setState(() => _localError = context.t('delivery.otp_incomplete'));
+      setState(() {
+        _errorKey = 'delivery.otp_incomplete';
+        _errorParams = null;
+      });
       return;
     }
-    Navigator.of(context).pop(_otp);
+    final assignmentId = widget.job.assignment?.id;
+    if (assignmentId == null) return;
+
+    setState(() {
+      _isSubmitting = true;
+      _errorKey = null;
+      _errorParams = null;
+    });
+    try {
+      await ref.read(deliveryRepositoryProvider).updateStatus(
+            assignmentId: assignmentId,
+            status: 'COMPLETED',
+            deliveryOtp: _otp,
+          );
+      if (!mounted) return;
+      invalidateDeliveryData(ref);
+      Navigator.of(context).pop(true);
+    } on AppFailure catch (failure) {
+      if (!mounted) return;
+      final locked = failure.message == 'delivery.otp_attempts_exhausted';
+      _showError(
+        failure.message,
+        params: failure is ValidationFailure ? failure.params : null,
+        lock: locked,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      _showError('error.generic');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.paddingOf(context).bottom;
     final viewInsets = MediaQuery.viewInsetsOf(context).bottom;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        DeliverySpacing.marginMobile,
-        DeliverySpacing.md,
-        DeliverySpacing.marginMobile,
-        DeliverySpacing.marginMobile + bottom + viewInsets,
-      ),
-      child: Column(
+    final errorBorder = OutlineInputBorder(
+      borderSide: BorderSide(color: DeliveryColors.error),
+    );
+    return PopScope(
+      canPop: !_isSubmitting,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          DeliverySpacing.marginMobile,
+          DeliverySpacing.md,
+          DeliverySpacing.marginMobile,
+          DeliverySpacing.marginMobile + bottom + viewInsets,
+        ),
+        child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -395,13 +476,24 @@ class _ConfirmDeliverySheetState extends State<_ConfirmDeliverySheet> {
           ),
           const SizedBox(height: DeliverySpacing.lg),
           Text(
-            context.t('delivery.mark_delivered_title'),
+            context.t(widget.job.confirmTitleKey),
             style: Theme.of(context).textTheme.headlineSmall,
           ),
           const SizedBox(height: DeliverySpacing.sm),
           Text(
-            context.t('delivery.otp_required'),
+            context.t(
+              widget.job.isReturnPickup
+                  ? 'delivery.pickup_code_prompt'
+                  : 'delivery.otp_required',
+            ),
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: DeliveryColors.onSurfaceVariant,
+                ),
+          ),
+          const SizedBox(height: DeliverySpacing.xs),
+          Text(
+            context.t('delivery.otp_attempt_limit'),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: DeliveryColors.onSurfaceVariant,
                 ),
           ),
@@ -416,19 +508,33 @@ class _ConfirmDeliverySheetState extends State<_ConfirmDeliverySheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  widget.job.orderNumber,
+                  widget.job.isReturnPickup
+                      ? context.t(widget.job.listTitleKey, {'orderNumber': widget.job.orderNumber})
+                      : widget.job.orderNumber,
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
                 ),
+                if (widget.job.customerName != null) ...[
+                  const SizedBox(height: DeliverySpacing.xs),
+                  Text(widget.job.customerName!),
+                ],
                 const SizedBox(height: DeliverySpacing.xs),
                 Text(widget.job.address.summary),
+                if (widget.job.isReturnPickup && widget.job.collectItems.isNotEmpty) ...[
+                  const SizedBox(height: DeliverySpacing.sm),
+                  for (final item in widget.job.collectItems)
+                    Padding(
+                      padding: const EdgeInsets.only(top: DeliverySpacing.xs),
+                      child: Text(item.displayLine),
+                    ),
+                ],
               ],
             ),
           ),
           const SizedBox(height: DeliverySpacing.lg),
           Text(
-            context.t('delivery.otp_label'),
+            context.t(widget.job.confirmCodeLabelKey),
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
@@ -443,15 +549,18 @@ class _ConfirmDeliverySheetState extends State<_ConfirmDeliverySheet> {
                   controller: _controllers[index],
                   focusNode: _focusNodes[index],
                   autofocus: index == 0,
+                  enabled: _canEdit,
                   textAlign: TextAlign.center,
                   keyboardType: TextInputType.number,
                   maxLength: index == 0 ? 4 : 1,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     counterText: '',
-                    border: OutlineInputBorder(),
+                    border: const OutlineInputBorder(),
+                    enabledBorder: _errorKey == null ? null : errorBorder,
+                    focusedBorder: _errorKey == null ? null : errorBorder,
                   ),
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   onChanged: (value) => _onDigitChanged(index, value),
@@ -465,28 +574,33 @@ class _ConfirmDeliverySheetState extends State<_ConfirmDeliverySheet> {
               );
             }),
           ),
-          if (_localError != null) ...[
+          if (_errorKey != null) ...[
             const SizedBox(height: DeliverySpacing.sm),
             Text(
-              _localError!,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              context.t(_errorKey!, _errorParams),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: DeliveryColors.error,
+                    fontWeight: FontWeight.w600,
                   ),
             ),
           ],
           const SizedBox(height: DeliverySpacing.lg),
           AppButton(
-            label: context.t('delivery.mark_delivered'),
-            onPressed: _isComplete ? _submit : null,
+            label: context.t(
+              widget.job.isReturnPickup ? 'delivery.confirm_pickup' : 'delivery.mark_delivered',
+            ),
+            isLoading: _isSubmitting,
+            onPressed: _canEdit && _isComplete ? _submit : null,
           ),
           const SizedBox(height: DeliverySpacing.sm),
           AppButton(
             label: context.t('common.cancel'),
             variant: AppButtonVariant.outline,
-            onPressed: () => Navigator.of(context).pop(null),
+            onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(false),
           ),
         ],
       ),
+    ),
     );
   }
 }
@@ -509,6 +623,8 @@ class _DeliveryDetailBody extends StatelessWidget {
     required this.onOpenShopMap,
     required this.onCallCustomer,
     required this.onCallShop,
+    this.onOpenLocalShopMap,
+    this.onCallLocalShop,
   });
 
   final DeliveryJob job;
@@ -527,9 +643,183 @@ class _DeliveryDetailBody extends StatelessWidget {
   final VoidCallback onOpenShopMap;
   final VoidCallback onCallCustomer;
   final VoidCallback onCallShop;
+  final VoidCallback? onOpenLocalShopMap;
+  final VoidCallback? onCallLocalShop;
 
   @override
   Widget build(BuildContext context) {
+    if (job.isReturnPickup) {
+      return _returnBody(context);
+    }
+    return _deliveryBody(context);
+  }
+
+  Widget _returnBody(BuildContext context) {
+    final dateFormat = DateFormat('dd MMM yyyy, hh:mm a');
+    final note = job.returnNote?.trim();
+
+    return Column(
+      children: [
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.all(DeliverySpacing.marginMobile),
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(DeliverySpacing.md),
+                decoration: BoxDecoration(
+                  color: DeliveryColors.primaryContainer,
+                  borderRadius: BorderRadius.circular(DeliveryRadius.lg),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      context.t('delivery.return_pickup_badge'),
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                            color: DeliveryColors.onPrimaryContainer,
+                            fontWeight: FontWeight.w700,
+                          ),
+                    ),
+                    const SizedBox(height: DeliverySpacing.xs),
+                    Text(
+                      context.t(job.listTitleKey, {'orderNumber': job.orderNumber}),
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            color: DeliveryColors.onPrimaryContainer,
+                            fontWeight: FontWeight.w700,
+                          ),
+                    ),
+                    const SizedBox(height: DeliverySpacing.xs),
+                    Text(
+                      context.t('delivery.return_pickup'),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: DeliveryColors.onPrimaryContainer,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: DeliverySpacing.sm),
+              Text(
+                dateFormat.format(job.placedAt.toLocal()),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: DeliveryColors.onSurfaceVariant,
+                    ),
+              ),
+              if (job.assignment != null) ...[
+                const SizedBox(height: DeliverySpacing.sm),
+                StatusChip(status: job.assignment!.status),
+              ],
+              const SizedBox(height: DeliverySpacing.lg),
+              Text(
+                context.t('delivery.collect_items'),
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: DeliverySpacing.sm),
+              if (job.collectItems.isEmpty)
+                Text(
+                  context.t('delivery.no_items'),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: DeliveryColors.onSurfaceVariant,
+                      ),
+                )
+              else
+                _JobItems(items: job.items.isNotEmpty
+                    ? job.items
+                    : job.collectItems
+                        .map(
+                          (item) => DeliveryJobItem(
+                            id: item.productName,
+                            productName: item.productName,
+                            variantLabel: item.variantLabel ?? '',
+                            unitPricePaise: 0,
+                            quantity: item.quantity,
+                            lineTotalPaise: 0,
+                          ),
+                        )
+                        .toList()),
+              const SizedBox(height: DeliverySpacing.lg),
+              Text(
+                context.t(job.addressLabelKey),
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: DeliverySpacing.sm),
+              _InfoCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (job.customerName != null)
+                      Text(job.customerName!, style: Theme.of(context).textTheme.titleSmall),
+                    if (job.customer != null) ...[
+                      const SizedBox(height: DeliverySpacing.xs),
+                      Text(job.customer!.displayPhone),
+                    ],
+                    const SizedBox(height: DeliverySpacing.sm),
+                    Text(job.address.summary),
+                    if (job.customer != null) ...[
+                      const SizedBox(height: DeliverySpacing.md),
+                      AppButton(
+                        label: context.t('delivery.call_customer'),
+                        icon: Icons.call_outlined,
+                        variant: AppButtonVariant.secondary,
+                        onPressed: isSubmitting ? null : onCallCustomer,
+                      ),
+                    ],
+                    if (job.canOpenMap) ...[
+                      const SizedBox(height: DeliverySpacing.sm),
+                      AppButton(
+                        label: context.t('delivery.go_to_customer'),
+                        icon: Icons.map_outlined,
+                        onPressed: isSubmitting ? null : onOpenMap,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              if (note != null && note.isNotEmpty) ...[
+                const SizedBox(height: DeliverySpacing.lg),
+                Text(context.t('common.notes'), style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: DeliverySpacing.sm),
+                Text(note),
+              ],
+              if (actionError != null) ...[
+                const SizedBox(height: DeliverySpacing.md),
+                Text(
+                  context.t(actionError!),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: DeliveryColors.error,
+                      ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        Container(
+          decoration: const BoxDecoration(
+            color: DeliveryColors.surfaceContainerLowest,
+            border: Border(top: BorderSide(color: DeliveryColors.cardBorder)),
+          ),
+          child: SafeArea(
+            minimum: const EdgeInsets.all(DeliverySpacing.marginMobile),
+            child: _ActionButtons(
+              job: job,
+              isSubmitting: isSubmitting,
+              onAcceptOrder: onAcceptOrder,
+              onAcceptAssigned: onAcceptAssigned,
+              onStart: onStart,
+              onComplete: onComplete,
+              onCollectPayment: onCollectPayment,
+              onCollectCash: onCollectCash,
+              onCheckPayment: onCheckPayment,
+              onReject: onReject,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _deliveryBody(BuildContext context) {
     final dateFormat = DateFormat('dd MMM yyyy, hh:mm a');
     final status = job.assignment?.status ?? job.orderStatus;
 
@@ -615,6 +905,17 @@ class _DeliveryDetailBody extends StatelessWidget {
                   ],
                 ),
               ),
+              if (job.localShop != null) ...[
+                const SizedBox(height: DeliverySpacing.lg),
+                Text(context.t('delivery.pickup'), style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: DeliverySpacing.sm),
+                _LocalShopPickupCard(
+                  shop: job.localShop!,
+                  isSubmitting: isSubmitting,
+                  onOpenMap: onOpenLocalShopMap,
+                  onCall: onCallLocalShop,
+                ),
+              ],
               if (job.customer != null) ...[
                 const SizedBox(height: DeliverySpacing.lg),
                 Text(context.t('delivery.customer'), style: Theme.of(context).textTheme.titleMedium),
@@ -692,23 +993,7 @@ class _DeliveryDetailBody extends StatelessWidget {
                       ),
                 )
               else
-                _InfoCard(
-                  child: Column(
-                    children: job.items
-                        .map(
-                          (item) => ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            title: Text(item.productName),
-                            subtitle: Text(
-                              item.variantLabel.isEmpty
-                                  ? '× ${item.quantity}'
-                                  : '${item.variantLabel} × ${item.quantity}',
-                            ),
-                          ),
-                        )
-                        .toList(),
-                  ),
-                ),
+                _JobItems(items: job.items),
               if (actionError != null) ...[
                 const SizedBox(height: DeliverySpacing.md),
                 Text(
@@ -763,6 +1048,104 @@ class _InfoCard extends StatelessWidget {
         border: Border.all(color: DeliveryColors.cardBorder),
       ),
       child: child,
+    );
+  }
+}
+
+class _LocalShopPickupCard extends StatelessWidget {
+  const _LocalShopPickupCard({
+    required this.shop,
+    required this.isSubmitting,
+    this.onOpenMap,
+    this.onCall,
+  });
+
+  final DeliveryStore shop;
+  final bool isSubmitting;
+  final VoidCallback? onOpenMap;
+  final VoidCallback? onCall;
+
+  @override
+  Widget build(BuildContext context) {
+    final phone = shop.displayPhone;
+
+    return _InfoCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.storefront_outlined, color: DeliveryColors.primary),
+              const SizedBox(width: DeliverySpacing.sm),
+              Expanded(
+                child: Text(
+                  shop.name,
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: DeliverySpacing.sm),
+          Text(
+            context.t('delivery.local_shop_pickup_note'),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: DeliveryColors.onSurfaceVariant,
+                ),
+          ),
+          if (phone != null) ...[
+            const SizedBox(height: DeliverySpacing.md),
+            Text(
+              context.t('delivery.shop_phone'),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: DeliveryColors.onSurfaceVariant,
+                  ),
+            ),
+            const SizedBox(height: DeliverySpacing.xs),
+            Text(
+              phone,
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+          ],
+          if (shop.addressSummary.isNotEmpty) ...[
+            const SizedBox(height: DeliverySpacing.md),
+            Text(
+              context.t('delivery.address'),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: DeliveryColors.onSurfaceVariant,
+                  ),
+            ),
+            const SizedBox(height: DeliverySpacing.xs),
+            Text(shop.addressSummary),
+          ],
+          if (shop.canOpenMap || shop.canCall) ...[
+            const SizedBox(height: DeliverySpacing.md),
+            Row(
+              children: [
+                if (shop.canOpenMap)
+                  Expanded(
+                    child: AppButton(
+                      label: context.t('delivery.go_to_map'),
+                      icon: Icons.map_outlined,
+                      variant: AppButtonVariant.secondary,
+                      onPressed: isSubmitting ? null : onOpenMap,
+                    ),
+                  ),
+                if (shop.canOpenMap && shop.canCall)
+                  const SizedBox(width: DeliverySpacing.sm),
+                if (shop.canCall)
+                  Expanded(
+                    child: AppButton(
+                      label: context.t('delivery.call_shop'),
+                      icon: Icons.call_outlined,
+                      variant: AppButtonVariant.outline,
+                      onPressed: isSubmitting ? null : onCall,
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
@@ -851,7 +1234,7 @@ class _ActionButtons extends StatelessWidget {
 
     if (job.canClaim) {
       return AppButton(
-        label: context.t('delivery.accept'),
+        label: context.t(job.isReturnPickup ? 'delivery.accept_pickup' : 'delivery.accept'),
         isLoading: isSubmitting,
         onPressed: isSubmitting ? null : onAcceptOrder,
       );
@@ -862,7 +1245,7 @@ class _ActionButtons extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           AppButton(
-            label: context.t('delivery.accept'),
+            label: context.t(job.isReturnPickup ? 'delivery.accept_pickup' : 'delivery.accept'),
             isLoading: isSubmitting,
             onPressed: isSubmitting ? null : onAcceptAssigned,
           ),
@@ -930,7 +1313,7 @@ class _ActionButtons extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           AppButton(
-            label: context.t('delivery.on_the_way'),
+            label: context.t(job.isReturnPickup ? 'delivery.on_the_way_pickup' : 'delivery.on_the_way'),
             icon: Icons.local_shipping_outlined,
             isLoading: isSubmitting,
             onPressed: isSubmitting ? null : onStart,
@@ -948,7 +1331,7 @@ class _ActionButtons extends StatelessWidget {
 
     if (job.canComplete) {
       return AppButton(
-        label: context.t('delivery.continue_otp'),
+        label: context.t(job.isReturnPickup ? 'delivery.continue_pickup_code' : 'delivery.continue_otp'),
         isLoading: isSubmitting,
         onPressed: isSubmitting ? null : onComplete,
       );
@@ -996,6 +1379,107 @@ class _CodCollectActions extends StatelessWidget {
             variant: primaryQr ? AppButtonVariant.secondary : AppButtonVariant.secondary,
             isLoading: isSubmitting,
             onPressed: isSubmitting ? null : onCollectCash,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _JobItems extends StatelessWidget {
+  const _JobItems({required this.items});
+
+  final List<DeliveryJobItem> items;
+
+  @override
+  Widget build(BuildContext context) {
+    final local = items.where((item) => item.isLocalShop).toList();
+    final regular = items.where((item) => !item.isLocalShop).toList();
+    if (local.isEmpty || regular.isEmpty) {
+      return _InfoCard(child: _itemList(context, items));
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(context.t('cart.local_shop_group'), style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: DeliverySpacing.sm),
+        _InfoCard(child: _itemList(context, local)),
+        const SizedBox(height: DeliverySpacing.md),
+        Text(context.t('cart.regular_group'), style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: DeliverySpacing.sm),
+        _InfoCard(child: _itemList(context, regular)),
+      ],
+    );
+  }
+
+  Widget _itemList(BuildContext context, List<DeliveryJobItem> group) {
+    return Column(
+      children: [
+        for (var i = 0; i < group.length; i++) ...[
+          if (i > 0) const SizedBox(height: DeliverySpacing.md),
+          _tile(context, group[i]),
+        ],
+      ],
+    );
+  }
+
+  Widget _tile(BuildContext context, DeliveryJobItem item) {
+    final imageUrl = item.imageUrl?.trim();
+    final hasImage = imageUrl != null && imageUrl.isNotEmpty;
+    final qtyLabel =
+        item.variantLabel.isEmpty ? '× ${item.quantity}' : '${item.variantLabel} × ${item.quantity}';
+    final theme = Theme.of(context);
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(DeliveryRadius.sm),
+          child: SizedBox(
+            width: 64,
+            height: 64,
+            child: hasImage
+                ? CachedNetworkImage(
+                    imageUrl: imageUrl,
+                    fit: BoxFit.cover,
+                    placeholder: (_, __) => ColoredBox(
+                      color: DeliveryColors.surfaceContainer,
+                      child: const Center(
+                        child: SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ),
+                    ),
+                    errorWidget: (_, __, ___) => const ColoredBox(
+                      color: DeliveryColors.surfaceContainer,
+                      child: Icon(Icons.image_not_supported_outlined),
+                    ),
+                  )
+                : const ColoredBox(
+                    color: DeliveryColors.surfaceContainer,
+                    child: Icon(Icons.image_not_supported_outlined),
+                  ),
+          ),
+        ),
+        const SizedBox(width: DeliverySpacing.md),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                item.productName,
+                style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: DeliverySpacing.xs),
+              Text(
+                qtyLabel,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: DeliveryColors.onSurfaceVariant,
+                ),
+              ),
+            ],
           ),
         ),
       ],

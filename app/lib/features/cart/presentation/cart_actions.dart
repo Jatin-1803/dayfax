@@ -191,32 +191,6 @@ Future<void> addVariantToCart(
   required String variantId,
   String? storeId,
 }) async {
-  final cart = ref.read(cartViewModelProvider).cart;
-  final currentStoreId = cart.storeId;
-  if (cart.itemCount > 0 &&
-      storeId != null &&
-      currentStoreId != null &&
-      currentStoreId != storeId) {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(dialogContext.t('cart.replace_title')),
-        content: Text(dialogContext.t('cart.replace_message')),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(dialogContext.t('common.cancel')),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(dialogContext.t('cart.replace_confirm')),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
-  }
-
   await HapticFeedback.mediumImpact();
   final ok = await ref.read(cartViewModelProvider.notifier).addVariant(
         variantId: variantId,

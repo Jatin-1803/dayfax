@@ -32,6 +32,8 @@ export interface OrderRow {
   grand_total_paise: number;
   currency: string;
   notes: string | null;
+  is_local_shop?: number;
+  checkout_group_id?: string | null;
   delivery_otp?: string | null;
   delivery_otp_attempts?: number;
   placed_at: Date;
@@ -48,13 +50,16 @@ export interface OrderRow {
 export interface OrderItemRow {
   id: string;
   order_id: string;
+  store_id: string;
   product_id: string;
   variant_id: string;
   product_name: string;
   variant_label: string;
   unit_price_paise: number;
+  unit_cost_paise: number | null;
   quantity: number;
   line_total_paise: number;
+  is_local_shop?: number;
   product_image_url?: string | null;
 }
 
@@ -192,6 +197,8 @@ export class OrdersRepository {
       discountPaise: number;
       grandTotalPaise: number;
       notes?: string;
+      isLocalShop: boolean;
+      checkoutGroupId?: string | null;
     },
     conn: PoolConnection,
   ): Promise<string> {
@@ -200,8 +207,8 @@ export class OrdersRepository {
       `INSERT INTO orders (
          id, order_number, user_id, store_id, service_area_id, delivery_zone_id, address_id,
          status, item_total_paise, delivery_fee_paise, tax_paise, discount_paise,
-         grand_total_paise, currency, notes
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'INR', ?)`,
+         grand_total_paise, currency, notes, is_local_shop, checkout_group_id
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'INR', ?, ?, ?)`,
       [
         id,
         input.orderNumber,
@@ -217,9 +224,51 @@ export class OrdersRepository {
         input.discountPaise,
         input.grandTotalPaise,
         input.notes ?? null,
+        input.isLocalShop ? 1 : 0,
+        input.checkoutGroupId ?? null,
       ],
     );
     return id;
+  }
+
+  async listOrderIdsByCheckoutGroup(
+    checkoutGroupId: string,
+    conn: Pool | PoolConnection = this.db,
+  ): Promise<string[]> {
+    const [rows] = await conn.query<RowDataPacket[]>(
+      `SELECT id FROM orders WHERE checkout_group_id = ? ORDER BY is_local_shop DESC, placed_at ASC`,
+      [checkoutGroupId],
+    );
+    return rows.map((row) => row.id as string);
+  }
+
+  async findCheckoutGroupId(
+    orderId: string,
+    conn: Pool | PoolConnection = this.db,
+  ): Promise<string | null> {
+    const [rows] = await conn.query<RowDataPacket[]>(
+      `SELECT checkout_group_id FROM orders WHERE id = ? LIMIT 1`,
+      [orderId],
+    );
+    return (rows[0]?.checkout_group_id as string | null | undefined) ?? null;
+  }
+
+  async listCheckoutGroupSummaries(
+    checkoutGroupId: string,
+    conn: Pool | PoolConnection = this.db,
+  ): Promise<Array<{ id: string; orderNumber: string; isLocalShop: boolean }>> {
+    const [rows] = await conn.query<RowDataPacket[]>(
+      `SELECT id, order_number, is_local_shop
+       FROM orders
+       WHERE checkout_group_id = ?
+       ORDER BY is_local_shop DESC, placed_at ASC`,
+      [checkoutGroupId],
+    );
+    return rows.map((row) => ({
+      id: row.id as string,
+      orderNumber: row.order_number as string,
+      isLocalShop: Boolean(row.is_local_shop),
+    }));
   }
 
   async createOrderItem(
@@ -230,26 +279,32 @@ export class OrdersRepository {
       productName: string;
       variantLabel: string;
       unitPricePaise: number;
+      unitCostPaise: number | null;
       quantity: number;
       lineTotalPaise: number;
+      isLocalShop: boolean;
+      storeId: string;
     },
     conn: PoolConnection,
   ): Promise<void> {
     await conn.query(
       `INSERT INTO order_items (
-         id, order_id, product_id, variant_id, product_name, variant_label,
-         unit_price_paise, quantity, line_total_paise
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         id, order_id, store_id, product_id, variant_id, product_name, variant_label,
+         unit_price_paise, unit_cost_paise, quantity, line_total_paise, is_local_shop
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         createId(),
         input.orderId,
+        input.storeId,
         input.productId,
         input.variantId,
         input.productName,
         input.variantLabel,
         input.unitPricePaise,
+        input.unitCostPaise,
         input.quantity,
         input.lineTotalPaise,
+        input.isLocalShop ? 1 : 0,
       ],
     );
   }
@@ -348,6 +403,7 @@ export class OrdersRepository {
       razorpayOrderId?: string | null;
       razorpayPaymentId?: string | null;
       razorpayQrId?: string | null;
+      method?: 'COD' | 'UPI' | 'CARD' | 'WALLET';
       provider?: string | null;
       verificationSource?: 'checkout' | 'webhook' | 'manual_check' | 'cash' | null;
     },
@@ -358,6 +414,10 @@ export class OrdersRepository {
     if (fields.status !== undefined) {
       sets.push('status = ?');
       values.push(fields.status);
+    }
+    if (fields.method !== undefined) {
+      sets.push('method = ?');
+      values.push(fields.method);
     }
     if (fields.providerRef !== undefined) {
       sets.push('provider_ref = ?');
@@ -392,6 +452,33 @@ export class OrdersRepository {
       ...values,
       paymentId,
     ]);
+  }
+
+  async markPaymentRefund(
+    paymentId: string,
+    input: {
+      refundStatus: 'NONE' | 'PENDING' | 'PROCESSING' | 'PAID' | 'FAILED';
+      paymentStatus?: string;
+      razorpayRefundId?: string | null;
+      payoutRef?: string | null;
+    },
+    conn: Pool | PoolConnection = this.db,
+  ): Promise<void> {
+    await conn.query(
+      `UPDATE payments
+       SET refund_status = ?,
+           status = COALESCE(?, status),
+           razorpay_refund_id = COALESCE(?, razorpay_refund_id),
+           refund_payout_ref = COALESCE(?, refund_payout_ref)
+       WHERE id = ?`,
+      [
+        input.refundStatus,
+        input.paymentStatus ?? null,
+        input.razorpayRefundId ?? null,
+        input.payoutRef ?? null,
+        paymentId,
+      ],
+    );
   }
 
   async updateOrderStatus(
@@ -585,7 +672,13 @@ export class OrdersRepository {
 
   async countByUser(userId: string): Promise<number> {
     const [rows] = await this.db.query<RowDataPacket[]>(
-      `SELECT COUNT(*) AS total FROM orders WHERE user_id = ?`,
+      `SELECT COUNT(*) AS total
+       FROM orders o
+       WHERE o.user_id = ?
+         AND NOT EXISTS (
+           SELECT 1 FROM order_status_history h
+           WHERE h.order_id = o.id AND h.note = 'checkout_abandoned'
+         )`,
       [userId],
     );
     return Number(rows[0]?.total ?? 0);
@@ -600,8 +693,8 @@ export class OrdersRepository {
       `SELECT
           o.id, o.order_number, o.user_id, o.store_id, o.service_area_id, o.delivery_zone_id,
           o.address_id, o.status, o.item_total_paise, o.delivery_fee_paise, o.tax_paise,
-          o.discount_paise, o.grand_total_paise, o.currency, o.notes,
-          o.delivery_otp, o.delivery_otp_attempts, o.placed_at,
+          o.discount_paise, o.grand_total_paise, o.currency, o.notes, o.is_local_shop,
+          o.checkout_group_id, o.delivery_otp, o.delivery_otp_attempts, o.placed_at,
           o.delivered_at, o.cancelled_at,
           s.name AS store_name,
           a.label AS address_label,
@@ -614,11 +707,23 @@ export class OrdersRepository {
        INNER JOIN addresses a ON a.id = o.address_id
        LEFT JOIN payments p ON p.order_id = o.id
        WHERE o.user_id = ?
+         AND NOT EXISTS (
+           SELECT 1 FROM order_status_history h
+           WHERE h.order_id = o.id AND h.note = 'checkout_abandoned'
+         )
        ORDER BY o.placed_at DESC
        LIMIT ? OFFSET ?`,
       [userId, limit, offset],
     );
     return rows as OrderRow[];
+  }
+
+  async findOwnedOrderId(userId: string, idOrNumber: string): Promise<string | null> {
+    const [rows] = await this.db.query<RowDataPacket[]>(
+      `SELECT id FROM orders WHERE user_id = ? AND (id = ? OR order_number = ?) LIMIT 1`,
+      [userId, idOrNumber, idOrNumber],
+    );
+    return (rows[0] as { id: string } | undefined)?.id ?? null;
   }
 
   async findByIdOrNumberForUser(
@@ -629,8 +734,8 @@ export class OrdersRepository {
       `SELECT
           o.id, o.order_number, o.user_id, o.store_id, o.service_area_id, o.delivery_zone_id,
           o.address_id, o.status, o.item_total_paise, o.delivery_fee_paise, o.tax_paise,
-          o.discount_paise, o.grand_total_paise, o.currency, o.notes,
-          o.delivery_otp, o.delivery_otp_attempts, o.placed_at,
+          o.discount_paise, o.grand_total_paise, o.currency, o.notes, o.is_local_shop,
+          o.checkout_group_id, o.delivery_otp, o.delivery_otp_attempts, o.placed_at,
           o.delivered_at, o.cancelled_at,
           s.name AS store_name,
           a.label AS address_label,
@@ -644,6 +749,10 @@ export class OrdersRepository {
        LEFT JOIN payments p ON p.order_id = o.id
        WHERE o.user_id = ?
          AND (o.id = ? OR o.order_number = ?)
+         AND NOT EXISTS (
+           SELECT 1 FROM order_status_history h
+           WHERE h.order_id = o.id AND h.note = 'checkout_abandoned'
+         )
        LIMIT 1`,
       [userId, idOrNumber, idOrNumber],
     );
@@ -656,8 +765,8 @@ export class OrdersRepository {
   ): Promise<OrderItemRow[]> {
     const [rows] = await conn.query<RowDataPacket[]>(
       `SELECT
-          oi.id, oi.order_id, oi.product_id, oi.variant_id, oi.product_name, oi.variant_label,
-          oi.unit_price_paise, oi.quantity, oi.line_total_paise,
+          oi.id, oi.order_id, oi.store_id, oi.product_id, oi.variant_id, oi.product_name, oi.variant_label,
+          oi.unit_price_paise, oi.unit_cost_paise, oi.quantity, oi.line_total_paise, oi.is_local_shop,
           p.image_url AS product_image_url
        FROM order_items oi
        LEFT JOIN products p ON p.id = oi.product_id
@@ -704,9 +813,18 @@ export class OrdersRepository {
   async lockOrderById(
     orderId: string,
     conn: PoolConnection,
-  ): Promise<{ id: string; status: string; store_id: string; user_id: string; order_number: string } | null> {
+  ): Promise<{
+    id: string;
+    status: string;
+    store_id: string;
+    service_area_id: string;
+    user_id: string;
+    order_number: string;
+    is_local_shop: number;
+    address_id: string;
+  } | null> {
     const [rows] = await conn.query<RowDataPacket[]>(
-      `SELECT id, status, store_id, user_id, order_number
+      `SELECT id, status, store_id, service_area_id, user_id, order_number, is_local_shop, address_id
        FROM orders
        WHERE id = ?
        LIMIT 1
@@ -717,8 +835,38 @@ export class OrdersRepository {
       id: string;
       status: string;
       store_id: string;
+      service_area_id: string;
       user_id: string;
       order_number: string;
+      is_local_shop: number;
+      address_id: string;
+    }) ?? null;
+  }
+
+  async findCustomerPrefill(
+    userId: string,
+    addressId: string,
+  ): Promise<{
+    phone: string;
+    phone_country_code: string;
+    full_name: string | null;
+    email: string | null;
+    address_full_name: string | null;
+  } | null> {
+    const [rows] = await this.db.query<RowDataPacket[]>(
+      `SELECT u.phone, u.phone_country_code, u.full_name, u.email, a.full_name AS address_full_name
+       FROM users u
+       LEFT JOIN addresses a ON a.id = ? AND a.user_id = u.id
+       WHERE u.id = ?
+       LIMIT 1`,
+      [addressId, userId],
+    );
+    return (rows[0] as {
+      phone: string;
+      phone_country_code: string;
+      full_name: string | null;
+      email: string | null;
+      address_full_name: string | null;
     }) ?? null;
   }
 

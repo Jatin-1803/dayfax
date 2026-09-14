@@ -48,10 +48,13 @@ class CheckoutUiState {
     CustomerOrder? placedOrder,
     bool clearError = false,
     bool clearPlaced = false,
+    bool clearSelectedAddress = false,
   }) {
     return CheckoutUiState(
       addresses: addresses ?? this.addresses,
-      selectedAddressId: selectedAddressId ?? this.selectedAddressId,
+      selectedAddressId: clearSelectedAddress
+          ? null
+          : (selectedAddressId ?? this.selectedAddressId),
       paymentMethod: paymentMethod ?? this.paymentMethod,
       notes: notes ?? this.notes,
       isLoading: isLoading ?? this.isLoading,
@@ -73,17 +76,22 @@ class CheckoutViewModel extends Notifier<CheckoutUiState> {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       final addresses = await ref.read(addressesRepositoryProvider).list();
-      String? defaultId;
-      for (final address in addresses) {
-        if (address.isDefault) {
-          defaultId = address.id;
-          break;
+      String? nextId = state.selectedAddressId;
+      final stillValid = nextId != null && addresses.any((address) => address.id == nextId);
+      if (!stillValid) {
+        nextId = null;
+        for (final address in addresses) {
+          if (address.isDefault) {
+            nextId = address.id;
+            break;
+          }
         }
+        nextId ??= addresses.isEmpty ? null : addresses.first.id;
       }
-      defaultId ??= addresses.isEmpty ? null : addresses.first.id;
       state = state.copyWith(
         addresses: addresses,
-        selectedAddressId: defaultId,
+        selectedAddressId: nextId,
+        clearSelectedAddress: nextId == null,
         isLoading: false,
         clearError: true,
       );
@@ -106,20 +114,26 @@ class CheckoutViewModel extends Notifier<CheckoutUiState> {
 
   Future<CheckoutResult?> placeOrder() async {
     if (state.isPlacing) return null;
-    final addressId = state.selectedAddressId;
+    final addressId = state.selectedAddress?.id;
     if (addressId == null) {
-      state = state.copyWith(errorMessage: 'Select a delivery address');
+      state = state.copyWith(errorMessage: 'checkout.add_address_to_order');
       return null;
     }
 
     final idempotencyKey =
         'chk_${DateTime.now().microsecondsSinceEpoch}_${Random().nextInt(1 << 32)}';
 
+    final cart = ref.read(cartViewModelProvider).cart;
+    final paymentMethod = cart.requiresOnlineOnly ? 'UPI' : state.paymentMethod;
+    if (cart.requiresOnlineOnly && state.paymentMethod != 'UPI') {
+      state = state.copyWith(paymentMethod: 'UPI');
+    }
+
     state = state.copyWith(isPlacing: true, clearError: true, clearPlaced: true);
     try {
       final result = await ref.read(ordersRepositoryProvider).checkout(
             addressId: addressId,
-            paymentMethod: state.paymentMethod,
+            paymentMethod: paymentMethod,
             notes: state.notes,
             idempotencyKey: idempotencyKey,
           );
@@ -209,11 +223,12 @@ class OrdersListViewModel extends Notifier<OrdersListState> {
     return const OrdersListState(isLoading: true);
   }
 
-  Future<void> load({bool reset = false}) async {
+  Future<void> load({bool reset = false, bool silent = false}) async {
     if (!reset && !state.hasNextPage) return;
     final nextPage = reset ? 1 : state.page + 1;
+    final keepVisible = silent && reset && state.items.isNotEmpty;
     state = state.copyWith(
-      isLoading: reset,
+      isLoading: reset && !keepVisible,
       isLoadingMore: !reset,
       clearError: true,
     );
@@ -235,24 +250,49 @@ class OrdersListViewModel extends Notifier<OrdersListState> {
       );
     }
   }
+
+  /// Keeps list chips in sync when a detail/track screen loads fresher data.
+  void patchOrder(CustomerOrder order) {
+    final index = state.items.indexWhere(
+      (item) => item.id == order.id || item.orderNumber == order.orderNumber,
+    );
+    if (index < 0) return;
+    final current = state.items[index];
+    if (current.status == order.status &&
+        current.returnRequest?.status == order.returnRequest?.status &&
+        current.payment?.status == order.payment?.status) {
+      return;
+    }
+    final items = [...state.items];
+    items[index] = order;
+    state = state.copyWith(items: items);
+  }
 }
 
 final ordersListViewModelProvider =
     NotifierProvider<OrdersListViewModel, OrdersListState>(OrdersListViewModel.new);
 
-class OrderDetailViewModel extends FamilyNotifier<AsyncValue<CustomerOrder>, String> {
+class OrderDetailViewModel extends Notifier<AsyncValue<CustomerOrder>> {
+  OrderDetailViewModel(this.arg);
+
+  final String arg;
+
   @override
-  AsyncValue<CustomerOrder> build(String arg) {
+  AsyncValue<CustomerOrder> build() {
     Future.microtask(load);
     return const AsyncValue.loading();
   }
 
-  Future<void> load() async {
-    state = const AsyncValue.loading();
+  Future<void> load({bool silent = false}) async {
+    if (!silent || !state.hasValue) {
+      state = const AsyncValue.loading();
+    }
     try {
       final order = await ref.read(ordersRepositoryProvider).getOne(arg);
       state = AsyncValue.data(order);
+      ref.read(ordersListViewModelProvider.notifier).patchOrder(order);
     } on AppFailure catch (failure) {
+      if (silent && state.hasValue) return;
       state = AsyncValue.error(failure, StackTrace.current);
     }
   }

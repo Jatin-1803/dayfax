@@ -101,11 +101,14 @@ class ShopDetailState {
   }
 }
 
-class ShopDetailViewModel extends FamilyNotifier<ShopDetailState, String> {
+class ShopDetailViewModel extends Notifier<ShopDetailState> {
+  ShopDetailViewModel(this.arg);
+
+  final String arg;
   Timer? _debounce;
 
   @override
-  ShopDetailState build(String arg) {
+  ShopDetailState build() {
     ref.onDispose(() => _debounce?.cancel());
     Future.microtask(() => load(reset: true));
     return const ShopDetailState();

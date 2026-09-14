@@ -15,19 +15,26 @@ import { adminAuthRouter } from './modules/admin-auth/admin-auth.routes.js';
 import { adminRouter } from './modules/admin/admin.routes.js';
 import { adminCatalogRouter } from './modules/admin-catalog/admin-catalog.routes.js';
 import { adminOrdersRouter } from './modules/admin-orders/admin-orders.routes.js';
+import { adminReturnsRouter } from './modules/admin-returns/admin-returns.routes.js';
 import { adminBannersRouter } from './modules/admin-banners/admin-banners.routes.js';
+import { adminNotificationsRouter } from './modules/admin-notifications/admin-notifications.routes.js';
+import { adminHomeCollectionsRouter } from './modules/admin-home-collections/admin-home-collections.routes.js';
 import { adminStoresRouter } from './modules/admin-stores/admin-stores.routes.js';
 import { bannersRouter } from './modules/banners/banners.routes.js';
+import { homeCollectionsRouter } from './modules/home-collections/home-collections.routes.js';
 import { adminUploadsRouter } from './modules/admin-uploads/admin-uploads.routes.js';
 import { adminUsersRouter } from './modules/admin-users/admin-users.routes.js';
 import { adminZonesRouter } from './modules/admin-zones/admin-zones.routes.js';
+import { adminBusinessAnalyticsRouter } from './modules/business-analytics/business-analytics.routes.js';
 import { cartRouter } from './modules/cart/cart.routes.js';
 import { categoriesRouter } from './modules/categories/categories.routes.js';
 import { healthRouter } from './modules/health/health.routes.js';
 import { i18nAdminRouter, i18nPublicRouter } from './modules/i18n/i18n.routes.js';
+import { devicesRouter } from './modules/devices/devices.routes.js';
 import { notificationsRouter } from './modules/notifications/notifications.routes.js';
 import { deliveryRouter } from './modules/delivery/delivery.routes.js';
 import { ordersRouter } from './modules/orders/orders.routes.js';
+import { supportRouter } from './modules/support/support.routes.js';
 import { productsRouter } from './modules/products/products.routes.js';
 import {
   adminProductSearchRouter,
@@ -35,6 +42,8 @@ import {
 } from './modules/search-admin/search-admin.routes.js';
 import { handleRazorpayWebhook } from './modules/payments/razorpay-webhook.controller.js';
 import { storesRouter } from './modules/stores/stores.routes.js';
+import { adminSystemRouter, appPublicRouter } from './modules/app-controls/app-controls.routes.js';
+import { enforceOperationalGates } from './common/middleware/operational-gates.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.resolve(__dirname, '../public');
@@ -99,7 +108,9 @@ export function createApp() {
   );
 
   const api = Router();
+  api.use(enforceOperationalGates);
   api.use('/health', healthRouter);
+  api.use('/app', appPublicRouter);
   api.use('/auth', authRouter);
   api.use('/i18n', i18nPublicRouter);
   api.use('/admin/auth', adminAuthRouter);
@@ -109,11 +120,17 @@ export function createApp() {
   api.use('/admin/catalog', adminCatalogRouter);
   api.use('/admin/stores', adminStoresRouter);
   api.use('/admin/banners', adminBannersRouter);
+  api.use('/admin/notifications', adminNotificationsRouter);
+  api.use('/admin/home-collections', adminHomeCollectionsRouter);
   api.use('/admin/orders', adminOrdersRouter);
+  api.use('/admin/returns', adminReturnsRouter);
   api.use('/admin/users', adminUsersRouter);
+  api.use('/admin/system', adminSystemRouter);
   api.use('/admin/zones', adminZonesRouter);
+  api.use('/admin/business-analytics', adminBusinessAnalyticsRouter);
   api.use('/stores', storesRouter);
   api.use('/banners', bannersRouter);
+  api.use('/home-collections', homeCollectionsRouter);
   api.use('/categories', categoriesRouter);
   api.use('/products', productsRouter);
   api.use('/admin/search', searchAdminRouter);
@@ -121,8 +138,10 @@ export function createApp() {
   api.use('/addresses', addressesRouter);
   api.use('/cart', cartRouter);
   api.use('/orders', ordersRouter);
+  api.use('/support', supportRouter);
   api.use('/delivery', deliveryRouter);
   api.use('/notifications', notificationsRouter);
+  api.use('/devices', devicesRouter);
 
   app.use(env.API_PREFIX, api);
   app.use(notFoundHandler);

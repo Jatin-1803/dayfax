@@ -14,9 +14,12 @@ class DeliveryRepository {
 
   final Dio _dio;
 
-  Future<DeliveryStats> fetchStats() async {
+  Future<DeliveryStats> fetchStats({required String date}) async {
     try {
-      final response = await _dio.get<Map<String, dynamic>>('/delivery/stats');
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/delivery/stats',
+        queryParameters: {'date': date},
+      );
       final body = response.data;
       if (body == null || body['success'] != true) {
         throw const ServerFailure();
@@ -32,6 +35,7 @@ class DeliveryRepository {
     required DeliveryJobsTab tab,
     int page = 1,
     int limit = 20,
+    String? date,
   }) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
@@ -40,6 +44,7 @@ class DeliveryRepository {
           'tab': tab.apiValue,
           'page': page,
           'limit': limit,
+          if (tab == DeliveryJobsTab.completed && date != null) 'date': date,
         },
       );
       final body = response.data;
@@ -75,6 +80,22 @@ class DeliveryRepository {
     try {
       final response =
           await _dio.post<Map<String, dynamic>>('/delivery/orders/$orderId/accept');
+      final body = response.data;
+      if (body == null || body['success'] != true) {
+        throw const ServerFailure();
+      }
+      return DeliveryJob.fromJson(body['data'] as Map<String, dynamic>);
+    } catch (error) {
+      if (error is AppFailure) rethrow;
+      throw mapDeliveryActionError(error);
+    }
+  }
+
+  Future<DeliveryJob> acceptReturn(String returnRequestId) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/delivery/returns/$returnRequestId/accept',
+      );
       final body = response.data;
       if (body == null || body['success'] != true) {
         throw const ServerFailure();
@@ -179,15 +200,20 @@ AppFailure mapDeliveryActionError(Object error) {
     final data = error.response!.data as Map;
     final errorBody = data['error'];
     final code = errorBody is Map ? errorBody['code'] as String? : null;
+    if (code == 'OTP_INVALID' || code == 'OTP_ATTEMPTS_EXHAUSTED') {
+      return mapDeliveryOtpFailure(code!, errorBody is Map ? errorBody['details'] : null);
+    }
     final mapped = switch (code) {
       'ORDER_NOT_AVAILABLE' => 'delivery.order_not_available',
-      'ORDER_ALREADY_ACCEPTED' => 'delivery.order_already_accepted',
+      'ORDER_ALREADY_ACCEPTED' => 'delivery.order_already_assigned',
+      'ORDER_ALREADY_ASSIGNED' => 'delivery.order_already_assigned',
       'ORDER_CANCELLED' => 'delivery.order_cancelled',
       'ORDER_ALREADY_DELIVERED' => 'delivery.order_already_delivered',
       'PAYMENT_PENDING' => 'delivery.payment_still_pending',
       'PAYMENT_AMOUNT_MISMATCH' => 'delivery.payment_amount_mismatch',
       'PAYMENT_VERIFICATION_PENDING' => 'delivery.payment_verify_failed',
       'OTP_NOT_ALLOWED' => 'delivery.otp_locked',
+      'OTP_NOT_SET' => 'delivery.otp_missing',
       _ => null,
     };
     if (mapped != null) {
@@ -196,4 +222,23 @@ AppFailure mapDeliveryActionError(Object error) {
     }
   }
   return mapDioError(error);
+}
+
+AppFailure mapDeliveryOtpFailure(String code, Object? details) {
+  final remaining = remainingOtpAttempts(details);
+  if (code == 'OTP_ATTEMPTS_EXHAUSTED' || remaining == 0) {
+    return const ValidationFailure('delivery.otp_attempts_exhausted');
+  }
+  return ValidationFailure(
+    'delivery.otp_incorrect',
+    {'remaining': '${remaining ?? 0}'},
+  );
+}
+
+int? remainingOtpAttempts(Object? details) {
+  if (details is! Map) return null;
+  final value = details['remainingAttempts'];
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  return null;
 }

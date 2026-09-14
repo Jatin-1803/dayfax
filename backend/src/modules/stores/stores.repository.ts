@@ -19,6 +19,7 @@ export interface StoreRow extends RowDataPacket {
   latitude: number | null;
   longitude: number | null;
   is_popular: number;
+  online_payment_only: number;
   is_active: number;
 }
 
@@ -52,7 +53,7 @@ export class StoresRepository {
     const [rows] = await this.db.query<StoreRow[]>(
       `SELECT id, service_area_id, name, slug, store_type, image_url, description,
               phone_country_code, phone, address_line1, address_line2, landmark,
-              city, pincode, latitude, longitude, is_popular, is_active
+              city, pincode, latitude, longitude, is_popular, online_payment_only, is_active
        FROM stores
        WHERE ${where.join(' AND ')}
        ORDER BY is_popular DESC, name ASC`,
@@ -65,7 +66,7 @@ export class StoresRepository {
     const [rows] = await this.db.query<StoreRow[]>(
       `SELECT id, service_area_id, name, slug, store_type, image_url, description,
               phone_country_code, phone, address_line1, address_line2, landmark,
-              city, pincode, latitude, longitude, is_popular, is_active
+              city, pincode, latitude, longitude, is_popular, online_payment_only, is_active
        FROM stores
        WHERE deleted_at IS NULL AND (id = ? OR slug = ?)
        LIMIT 1`,
@@ -78,7 +79,7 @@ export class StoresRepository {
     const [rows] = await this.db.query<StoreRow[]>(
       `SELECT id, service_area_id, name, slug, store_type, image_url, description,
               phone_country_code, phone, address_line1, address_line2, landmark,
-              city, pincode, latitude, longitude, is_popular, is_active
+              city, pincode, latitude, longitude, is_popular, online_payment_only, is_active
        FROM stores
        WHERE id = ? AND deleted_at IS NULL
        LIMIT 1`,
@@ -91,7 +92,7 @@ export class StoresRepository {
     const [rows] = await this.db.query<StoreRow[]>(
       `SELECT id, service_area_id, name, slug, store_type, image_url, description,
               phone_country_code, phone, address_line1, address_line2, landmark,
-              city, pincode, latitude, longitude, is_popular, is_active
+              city, pincode, latitude, longitude, is_popular, online_payment_only, is_active
        FROM stores
        WHERE slug = ? AND deleted_at IS NULL
        LIMIT 1`,

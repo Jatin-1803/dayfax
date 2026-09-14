@@ -295,6 +295,64 @@ export class ProductsRepository {
       .filter((row): row is ProductListRow => Boolean(row));
   }
 
+  /**
+   * In-stock listings for a fixed product set, one active store per product, input order.
+   */
+  async listSellableByIds(productIds: string[]): Promise<ProductListRow[]> {
+    if (productIds.length === 0) return [];
+
+    const placeholders = productIds.map(() => '?').join(', ');
+    const [rows] = await this.db.query<RowDataPacket[]>(
+      `SELECT
+          p.id,
+          p.name,
+          p.name_hi,
+          p.slug,
+          p.description,
+          p.description_hi,
+          p.brand,
+          p.image_url,
+          p.category_id,
+          c.name AS category_name,
+          c.name_hi AS category_name_hi,
+          s.id AS store_id,
+          s.name AS store_name,
+          pv.id AS default_variant_id,
+          pv.unit_label,
+          pv.price_paise,
+          pv.mrp_paise,
+          inv.quantity_available
+       FROM products p
+       INNER JOIN store_products sp ON sp.product_id = p.id AND sp.is_available = 1
+       INNER JOIN stores s ON s.id = sp.store_id
+       INNER JOIN categories c ON c.id = p.category_id
+       INNER JOIN product_variants pv
+         ON pv.product_id = p.id
+        AND pv.deleted_at IS NULL
+        AND pv.is_active = 1
+        AND pv.is_default = 1
+       INNER JOIN inventory inv
+         ON inv.store_id = sp.store_id
+        AND inv.variant_id = pv.id
+        AND inv.quantity_available > 0
+       WHERE p.deleted_at IS NULL
+         AND p.is_active = 1
+         AND s.deleted_at IS NULL
+         AND s.is_active = 1
+         AND p.id IN (${placeholders})
+       ORDER BY p.id ASC, s.created_at ASC`,
+      productIds,
+    );
+
+    const byId = new Map<string, ProductListRow>();
+    for (const row of rows as ProductListRow[]) {
+      if (!byId.has(row.id)) byId.set(row.id, row);
+    }
+    return productIds
+      .map((id) => byId.get(id))
+      .filter((row): row is ProductListRow => Boolean(row));
+  }
+
   async listIndexDocuments(options?: { productId?: string }): Promise<
     Array<{
       id: string;

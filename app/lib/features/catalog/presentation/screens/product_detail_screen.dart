@@ -63,18 +63,19 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
             : ref.watch(cartItemIdByVariantProvider(selected.id));
         final eta = quoteAsync.maybeWhen(data: (q) => q.etaMinutes, orElse: () => null);
 
+        final cartCount = ref.watch(cartItemCountProvider);
+
         return Scaffold(
           appBar: AppBar(title: Text(product.name)),
-          body: StickyCartScaffoldBody(
-            child: Column(
-              children: [
-                Expanded(
-                  child: ListView(
+          body: Column(
+            children: [
+              Expanded(
+                child: ListView(
                     padding: const EdgeInsets.fromLTRB(
                       CustomerSpacing.marginMobile,
                       CustomerSpacing.md,
                       CustomerSpacing.marginMobile,
-                      100,
+                      CustomerSpacing.md,
                     ),
                     children: [
                       if (eta != null && eta > 0) ...[
@@ -86,25 +87,30 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(CustomerRadius.lg),
                           child: AspectRatio(
-                            aspectRatio: 16 / 11,
-                            child: product.imageUrl == null || product.imageUrl!.isEmpty
-                                ? Container(
-                                    color: CustomerColors.surfaceContainer,
-                                    child: const Icon(
-                                      Icons.image_not_supported_outlined,
-                                      size: 48,
+                            aspectRatio: 1,
+                            child: ColoredBox(
+                              color: CustomerColors.surfaceContainerLow,
+                              child: product.imageUrl == null || product.imageUrl!.isEmpty
+                                  ? const Center(
+                                      child: Icon(
+                                        Icons.image_not_supported_outlined,
+                                        size: 48,
+                                      ),
+                                    )
+                                  : CachedNetworkImage(
+                                      imageUrl: product.imageUrl!,
+                                      fit: BoxFit.contain,
+                                      width: double.infinity,
+                                      height: double.infinity,
+                                      alignment: Alignment.center,
+                                      placeholder: (context, url) => const ColoredBox(
+                                        color: CustomerColors.surfaceContainerLow,
+                                      ),
+                                      errorWidget: (context, url, error) => const Center(
+                                        child: Icon(Icons.image_not_supported_outlined),
+                                      ),
                                     ),
-                                  )
-                                : CachedNetworkImage(
-                                    imageUrl: product.imageUrl!,
-                                    fit: BoxFit.cover,
-                                    placeholder: (context, url) =>
-                                        Container(color: CustomerColors.surfaceContainer),
-                                    errorWidget: (context, url, error) => Container(
-                                      color: CustomerColors.surfaceContainer,
-                                      child: const Icon(Icons.image_not_supported_outlined),
-                                    ),
-                                  ),
+                            ),
                           ),
                         ),
                       ),
@@ -214,67 +220,75 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                   ),
                 ),
                 SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      CustomerSpacing.marginMobile,
-                      CustomerSpacing.sm,
-                      CustomerSpacing.marginMobile,
-                      CustomerSpacing.md,
-                    ),
-                    child: Row(
-                      children: [
-                        if (selected != null)
-                          Expanded(
-                            child: PriceText(
-                              paise: selected.pricePaise,
-                              mrpPaise: selected.mrpPaise,
-                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                    color: CustomerColors.primary,
-                                    fontWeight: FontWeight.w800,
+                  top: false,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          CustomerSpacing.marginMobile,
+                          CustomerSpacing.sm,
+                          CustomerSpacing.marginMobile,
+                          CustomerSpacing.md,
+                        ),
+                        child: Row(
+                          children: [
+                            if (selected != null)
+                              Expanded(
+                                child: PriceText(
+                                  paise: selected.pricePaise,
+                                  mrpPaise: selected.mrpPaise,
+                                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                        color: CustomerColors.primary,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                ),
+                              ),
+                            if (quantity > 0 && itemId != null)
+                              QtyStepper(
+                                quantity: quantity,
+                                onIncrement: () => ref
+                                    .read(cartViewModelProvider.notifier)
+                                    .setQuantity(itemId, quantity + 1),
+                                onDecrement: () => ref
+                                    .read(cartViewModelProvider.notifier)
+                                    .setQuantity(itemId, quantity - 1),
+                              )
+                            else
+                              Flexible(
+                                child: ConstrainedBox(
+                                  constraints: const BoxConstraints(maxWidth: 220),
+                                  child: AppButton(
+                                    label: selected?.inStock == true
+                                        ? ref.t('catalog.add')
+                                        : ref.t('catalog.out_of_stock'),
+                                    isLoading: _adding,
+                                    expanded: true,
+                                    onPressed: selected?.inStock == true && !_adding
+                                        ? () async {
+                                            setState(() => _adding = true);
+                                            try {
+                                              await addVariantToCart(
+                                                context,
+                                                ref,
+                                                variantId: selected!.id,
+                                              );
+                                            } finally {
+                                              if (mounted) setState(() => _adding = false);
+                                            }
+                                          }
+                                        : null,
                                   ),
-                            ),
-                          ),
-                        if (quantity > 0 && itemId != null)
-                          QtyStepper(
-                            quantity: quantity,
-                            onIncrement: () => ref
-                                .read(cartViewModelProvider.notifier)
-                                .setQuantity(itemId, quantity + 1),
-                            onDecrement: () => ref
-                                .read(cartViewModelProvider.notifier)
-                                .setQuantity(itemId, quantity - 1),
-                          )
-                        else
-                          Flexible(
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 220),
-                              child: AppButton(
-                              label: selected?.inStock == true ? ref.t('catalog.add') : ref.t('catalog.out_of_stock'),
-                              isLoading: _adding,
-                              expanded: true,
-                              onPressed: selected?.inStock == true && !_adding
-                                  ? () async {
-                                      setState(() => _adding = true);
-                                      try {
-                                        await addVariantToCart(
-                                          context,
-                                          ref,
-                                          variantId: selected!.id,
-                                        );
-                                      } finally {
-                                        if (mounted) setState(() => _adding = false);
-                                      }
-                                    }
-                                  : null,
-                            ),
-                            ),
-                          ),
-                      ],
-                    ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      if (cartCount > 0) const StickyCartBar(),
+                    ],
                   ),
                 ),
-              ],
-            ),
+            ],
           ),
         );
       },

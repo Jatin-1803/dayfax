@@ -1,6 +1,13 @@
 node_modules/
 dist/
 .env
+*-firebase-adminsdk-*.json
+firebase-service-account.json
 coverage/
 *.log
 .DS_Store
+
+# User-uploaded return photos (runtime)
+public/returns/uploads/*
+!public/returns/uploads/.gitkeep
+

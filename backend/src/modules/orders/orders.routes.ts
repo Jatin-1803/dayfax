@@ -21,6 +21,9 @@ ordersRouter.post(
   validateRequest(verifyPaymentSchema),
   controller.verifyPayment,
 );
+ordersRouter.post('/:idOrNumber/payments/abandon', controller.abandonPayment);
+ordersRouter.post('/:idOrNumber/payments/online', controller.startOnlinePayment);
 ordersRouter.get('/', validateRequest(listOrdersSchema, 'query'), controller.list);
+ordersRouter.post('/:idOrNumber/cancel', controller.cancel);
 ordersRouter.get('/:idOrNumber/timeline', controller.timeline);
 ordersRouter.get('/:idOrNumber', controller.getOne);

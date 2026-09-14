@@ -46,6 +46,7 @@ interface OrderDetail extends AdminOrderSummary {
     variantLabel: string;
     quantity: number;
     lineTotalPaise: number;
+    isLocalShop?: boolean;
   }>;
   timeline: Array<{
     status: string;
@@ -226,6 +227,9 @@ export function OrderDetailPage() {
   const [partnerId, setPartnerId] = useState('');
   const [partners, setPartners] = useState<AdminUser[]>([]);
   const [busy, setBusy] = useState(false);
+  const [codOpen, setCodOpen] = useState(false);
+  const [paymentReceived, setPaymentReceived] = useState<'CASH' | 'UPI' | 'CARD' | ''>('');
+  const [deliveryNote, setDeliveryNote] = useState('');
 
   async function loadPartners() {
     try {
@@ -259,22 +263,57 @@ export function OrderDetailPage() {
     void loadPartners();
   }, [id]);
 
-  async function onStatus(e: FormEvent) {
-    e.preventDefault();
+  async function saveStatus(body: {
+    status: OrderStatus;
+    note?: string;
+    paymentReceived?: 'CASH' | 'UPI' | 'CARD';
+  }) {
     if (!id) return;
     setBusy(true);
     try {
       await apiRequest(`/admin/orders/${id}/status`, {
         method: 'PATCH',
-        body: JSON.stringify({ status: nextStatus }),
+        body: JSON.stringify(body),
       });
       toast.push('Status updated', 'success');
+      setCodOpen(false);
+      setPaymentReceived('');
+      setDeliveryNote('');
       await load();
     } catch (err) {
       toast.push(err instanceof ApiError ? err.message : 'Update failed', 'error');
     } finally {
       setBusy(false);
     }
+  }
+
+  async function onStatus(e: FormEvent) {
+    e.preventDefault();
+    if (!id) return;
+    if (nextStatus === 'DELIVERED' && order?.payment?.method === 'COD') {
+      setPaymentReceived('');
+      setDeliveryNote('');
+      setCodOpen(true);
+      return;
+    }
+    await saveStatus({ status: nextStatus });
+  }
+
+  async function confirmCodDelivery(e: FormEvent) {
+    e.preventDefault();
+    if (!paymentReceived) {
+      toast.push('Choose how the payment was received', 'error');
+      return;
+    }
+    if (deliveryNote.trim().length < 3) {
+      toast.push('Add a short note about the payment', 'error');
+      return;
+    }
+    await saveStatus({
+      status: 'DELIVERED',
+      note: deliveryNote.trim(),
+      paymentReceived,
+    });
   }
 
   async function onAssign(e: FormEvent) {
@@ -369,6 +408,7 @@ export function OrderDetailPage() {
             <br />
             <strong>Grand: {formatPaise(order.grandTotalPaise)}</strong>
           </p>
+          <ItemGroupTotals items={order.items} />
           <p className="muted">
             Payment: {order.payment?.method || '—'} ({order.payment?.status || '—'})
           </p>
@@ -394,32 +434,7 @@ export function OrderDetailPage() {
         </div>
       </div>
 
-      <div className="card">
-        <h2 style={{ marginTop: 0, fontFamily: 'var(--display)', fontSize: '1.2rem' }}>Items</h2>
-        <div className="table-wrap">
-          <table className="data">
-            <thead>
-              <tr>
-                <th>Item</th>
-                <th>Qty</th>
-                <th>Line</th>
-              </tr>
-            </thead>
-            <tbody>
-              {order.items.map((item) => (
-                <tr key={item.id}>
-                  <td>
-                    {item.productName}
-                    <div className="muted">{item.variantLabel}</div>
-                  </td>
-                  <td>{item.quantity}</td>
-                  <td>{formatPaise(item.lineTotalPaise)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <OrderItemGroups items={order.items} />
 
       <div className="card">
         <h2 style={{ marginTop: 0, fontFamily: 'var(--display)', fontSize: '1.2rem' }}>
@@ -442,6 +457,70 @@ export function OrderDetailPage() {
           </button>
         </form>
       </div>
+
+      {codOpen ? (
+        <div className="modal-backdrop" role="presentation" onClick={() => !busy && setCodOpen(false)}>
+          <div
+            className="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cod-delivery-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h2 id="cod-delivery-title">Confirm COD delivery</h2>
+            <p className="muted">
+              This order is cash on delivery. Record how payment was received before marking it delivered.
+              The delivery partner job will be marked completed too.
+            </p>
+            <p>
+              Amount due:{' '}
+              <strong>{formatPaise(order.grandTotalPaise)}</strong>
+              {order.payment?.status ? ` · currently ${order.payment.status}` : ''}
+            </p>
+            <form className="stack" onSubmit={confirmCodDelivery}>
+              <div className="field">
+                <label htmlFor="payment-received">How was payment received?</label>
+                <select
+                  id="payment-received"
+                  required
+                  value={paymentReceived}
+                  onChange={(e) => setPaymentReceived(e.target.value as 'CASH' | 'UPI' | 'CARD' | '')}
+                >
+                  <option value="">Select method</option>
+                  <option value="CASH">Cash</option>
+                  <option value="UPI">UPI</option>
+                  <option value="CARD">Card</option>
+                </select>
+              </div>
+              <div className="field">
+                <label htmlFor="delivery-note">Note</label>
+                <textarea
+                  id="delivery-note"
+                  required
+                  minLength={3}
+                  maxLength={500}
+                  value={deliveryNote}
+                  onChange={(e) => setDeliveryNote(e.target.value)}
+                  placeholder="Who collected it, reference, or any detail"
+                />
+              </div>
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  disabled={busy}
+                  onClick={() => setCodOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button className="btn" type="submit" disabled={busy}>
+                  {busy ? 'Saving…' : 'Mark delivered'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
 
       <div className="card">
         <h2 style={{ marginTop: 0, fontFamily: 'var(--display)', fontSize: '1.2rem' }}>
@@ -470,5 +549,99 @@ export function OrderDetailPage() {
         ) : null}
       </div>
     </div>
+  );
+}
+
+type OrderLine = OrderDetail['items'][number];
+
+function groupSubtotal(items: OrderLine[], local: boolean) {
+  return items
+    .filter((item) => Boolean(item.isLocalShop) === local)
+    .reduce((sum, item) => sum + item.lineTotalPaise, 0);
+}
+
+function ItemGroupTotals({ items }: { items: OrderLine[] }) {
+  const local = items.filter((item) => item.isLocalShop);
+  const regular = items.filter((item) => !item.isLocalShop);
+  if (local.length === 0 || regular.length === 0) return null;
+  return (
+    <p className="muted" style={{ marginTop: '0.75rem' }}>
+      Local shop items: {formatPaise(groupSubtotal(items, true))}
+      <br />
+      Other items: {formatPaise(groupSubtotal(items, false))}
+    </p>
+  );
+}
+
+function ItemTable({ items }: { items: OrderLine[] }) {
+  return (
+    <div className="table-wrap">
+      <table className="data">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Qty</th>
+            <th>Line</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((item) => (
+            <tr key={item.id}>
+              <td>
+                {item.productName}
+                <div className="muted">{item.variantLabel}</div>
+              </td>
+              <td>{item.quantity}</td>
+              <td>{formatPaise(item.lineTotalPaise)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function OrderItemGroups({ items }: { items: OrderLine[] }) {
+  const local = items.filter((item) => item.isLocalShop);
+  const regular = items.filter((item) => !item.isLocalShop);
+  const mixed = local.length > 0 && regular.length > 0;
+
+  if (!mixed) {
+    return (
+      <div className="card">
+        <h2 style={{ marginTop: 0, fontFamily: 'var(--display)', fontSize: '1.2rem' }}>Items</h2>
+        {local.length > 0 ? (
+          <p>
+            <span className="badge badge-warn">Local shop · prepaid, no return</span>
+          </p>
+        ) : null}
+        <ItemTable items={items} />
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="card" style={{ marginBottom: '1rem' }}>
+        <h2 style={{ marginTop: 0, fontFamily: 'var(--display)', fontSize: '1.2rem' }}>
+          Local shop <span className="badge badge-warn">Prepaid, no return</span>
+        </h2>
+        <p className="muted">Pay online. These items cannot be returned or refunded.</p>
+        <p>
+          <strong>Group total: {formatPaise(groupSubtotal(items, true))}</strong>
+        </p>
+        <ItemTable items={local} />
+      </div>
+      <div className="card">
+        <h2 style={{ marginTop: 0, fontFamily: 'var(--display)', fontSize: '1.2rem' }}>
+          Other items <span className="badge">Cash on delivery</span>
+        </h2>
+        <p className="muted">These items can be paid cash on delivery.</p>
+        <p>
+          <strong>Group total: {formatPaise(groupSubtotal(items, false))}</strong>
+        </p>
+        <ItemTable items={regular} />
+      </div>
+    </>
   );
 }

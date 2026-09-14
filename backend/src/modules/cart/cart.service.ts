@@ -1,6 +1,7 @@
 import { ConflictError, NotFoundError, ValidationError } from '../../common/errors/app-error.js';
 import { withTransaction } from '../../common/database/pool.js';
 import { toPublicAssetUrl } from '../../common/utils/public-url.js';
+import { isLocalShopStoreType, requiresOnlinePayment } from '../stores/local-shop.js';
 import { CartRepository } from './cart.repository.js';
 import type { AddCartItemInput, UpdateCartItemInput } from './cart.schema.js';
 import type { CartItemRow, CartRow } from './cart.repository.js';
@@ -10,10 +11,13 @@ function mapItem(row: CartItemRow) {
   const currentPrice = row.current_price_paise;
   return {
     id: row.id,
+    storeId: row.store_id,
     variantId: row.variant_id,
     quantity: row.quantity,
     unitPricePaise: row.unit_price_paise,
     lineTotalPaise: row.unit_price_paise * row.quantity,
+    isLocalShop: isLocalShopStoreType(row.store_type),
+    requiresOnlinePayment: requiresOnlinePayment(row.online_payment_only),
     product: {
       id: row.product_id,
       name: row.product_name,
@@ -35,6 +39,10 @@ function emptyCart() {
     id: null as string | null,
     storeId: null as string | null,
     serviceAreaId: null as string | null,
+    isLocalShop: false,
+    codAllowed: true,
+    localShopSubtotalPaise: 0,
+    regularSubtotalPaise: 0,
     items: [] as ReturnType<typeof mapItem>[],
     itemCount: 0,
     subtotalPaise: 0,
@@ -44,10 +52,21 @@ function emptyCart() {
 
 function summarize(cart: CartRow, items: CartItemRow[]) {
   const mapped = items.map(mapItem);
+  const localShopSubtotalPaise = mapped
+    .filter((item) => item.isLocalShop)
+    .reduce((sum, item) => sum + item.lineTotalPaise, 0);
+  const regularSubtotalPaise = mapped
+    .filter((item) => !item.isLocalShop)
+    .reduce((sum, item) => sum + item.lineTotalPaise, 0);
   return {
     id: cart.id,
     storeId: cart.store_id,
     serviceAreaId: cart.service_area_id,
+    isLocalShop: mapped.some((item) => item.isLocalShop),
+    codAllowed:
+      mapped.length === 0 || mapped.some((item) => !item.requiresOnlinePayment),
+    localShopSubtotalPaise,
+    regularSubtotalPaise,
     items: mapped,
     itemCount: mapped.reduce((sum, item) => sum + item.quantity, 0),
     subtotalPaise: mapped.reduce((sum, item) => sum + item.lineTotalPaise, 0),
@@ -61,8 +80,14 @@ export class CartService {
   async getCart(userId: string) {
     const cart = await this.repo.findActiveCart(userId);
     if (!cart) return emptyCart();
-    const items = await this.repo.listItems(cart.id);
-    return summarize(cart, items);
+    const [items, storeType] = await Promise.all([
+      this.repo.listItems(cart.id),
+      this.repo.findStoreType(cart.store_id),
+    ]);
+    return {
+      ...summarize(cart, items),
+      isLocalShop: isLocalShopStoreType(storeType) || items.some((item) => isLocalShopStoreType(item.store_type)),
+    };
   }
 
   async addItem(userId: string, input: AddCartItemInput) {
@@ -83,12 +108,6 @@ export class CartService {
     await withTransaction(async (conn) => {
       let cart = await this.repo.findActiveCart(userId, conn);
 
-      if (cart && cart.store_id !== sellable.store_id) {
-        await this.repo.deleteAllItems(cart.id, conn);
-        await this.repo.abandonCart(cart.id, conn);
-        cart = null;
-      }
-
       if (!cart) {
         const cartId = await this.repo.createCart(
           {
@@ -107,7 +126,12 @@ export class CartService {
         };
       }
 
-      const existing = await this.repo.findItemByVariant(cart.id, input.variantId, conn);
+      const existing = await this.repo.findItemByVariant(
+        cart.id,
+        input.variantId,
+        sellable.store_id,
+        conn,
+      );
       const nextQty = (existing?.quantity ?? 0) + input.quantity;
       if (nextQty > sellable.quantity_available) {
         throw new ConflictError(
@@ -125,6 +149,7 @@ export class CartService {
         await this.repo.insertItem(
           {
             cartId: cart.id,
+            storeId: sellable.store_id,
             variantId: input.variantId,
             quantity: input.quantity,
             unitPricePaise: sellable.price_paise,
@@ -161,7 +186,7 @@ export class CartService {
 
     const sellable = await this.repo.resolveSellableVariant({
       variantId: item.variant_id,
-      storeId: cart.store_id,
+      storeId: item.store_id,
     });
     if (!sellable) {
       throw new ValidationError('This product is no longer available');

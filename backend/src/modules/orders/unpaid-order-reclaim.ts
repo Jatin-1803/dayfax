@@ -2,6 +2,7 @@ import { env } from '../../config/env.js';
 import { withTransaction } from '../../common/database/pool.js';
 import { logger } from '../../common/logger/logger.js';
 import { NotificationsRepository } from '../notifications/notifications.repository.js';
+import { pushToUser, schedulePush } from '../notifications/push.service.js';
 import { OrdersRepository } from './orders.repository.js';
 
 const BATCH_LIMIT = 50;
@@ -23,9 +24,10 @@ export class UnpaidOrderReclaimService {
     const ttlMinutes = options?.ttlMinutes ?? env.UNPAID_ORDER_TTL_MINUTES;
     const limit = options?.limit ?? BATCH_LIMIT;
 
-    return withTransaction(async (conn) => {
+    const result = await withTransaction(async (conn) => {
       const expired = await this.repo.listExpiredUnpaidOnlineOrders(ttlMinutes, limit, conn);
       let reclaimed = 0;
+      const cancelled: Array<{ userId: string; orderId: string; orderNumber: string }> = [];
 
       for (const row of expired) {
         const order = await this.repo.lockOrderById(row.id, conn);
@@ -41,7 +43,12 @@ export class UnpaidOrderReclaimService {
         const items = await this.repo.listItems(order.id, conn);
         const sorted = [...items].sort((a, b) => a.variant_id.localeCompare(b.variant_id));
         for (const item of sorted) {
-          await this.repo.restoreInventory(order.store_id, item.variant_id, item.quantity, conn);
+          await this.repo.restoreInventory(
+            item.store_id || order.store_id,
+            item.variant_id,
+            item.quantity,
+            conn,
+          );
         }
 
         await this.repo.updatePayment(payment.id, { status: 'FAILED' }, conn);
@@ -70,10 +77,29 @@ export class UnpaidOrderReclaimService {
           conn,
         );
         reclaimed += 1;
+        cancelled.push({
+          userId: order.user_id,
+          orderId: order.id,
+          orderNumber: order.order_number,
+        });
       }
 
-      return { scanned: expired.length, reclaimed };
+      return { scanned: expired.length, reclaimed, cancelled };
     });
+
+    for (const notice of result.cancelled) {
+      schedulePush(() =>
+        pushToUser({
+          userId: notice.userId,
+          appRole: 'CUSTOMER',
+          copyKey: 'order_cancelled',
+          orderId: notice.orderId,
+          orderNumber: notice.orderNumber,
+        }),
+      );
+    }
+
+    return { scanned: result.scanned, reclaimed: result.reclaimed };
   }
 }
 

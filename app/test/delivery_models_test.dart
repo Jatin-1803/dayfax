@@ -84,4 +84,50 @@ void main() {
     expect(paid.canComplete, isTrue);
     expect(paid.isPaidOnline, isFalse);
   });
+
+  test('DeliveryJob parses merged local shop pickup contact', () {
+    final job = DeliveryJob.fromJson({
+      'orderId': 'order-1',
+      'orderNumber': 'DF-1',
+      'orderStatus': 'CONFIRMED',
+      'grandTotalPaise': 1000,
+      'currency': 'INR',
+      'placedAt': '2026-09-06T21:57:10Z',
+      'store': {'id': 'store-1', 'name': 'Mart'},
+      'localShop': {
+        'id': 'shop-1',
+        'name': 'Sharma Foods',
+        'phoneCountryCode': '+91',
+        'phone': '9876543210',
+        'addressLine1': 'Shop 12, Main Market',
+        'city': 'Gurugram',
+        'latitude': '28.45',
+        'longitude': '77.02',
+      },
+      'address': {'id': 'addr-1', 'label': 'Home', 'line1': 'Lane 1', 'city': 'Gurugram'},
+    });
+
+    expect(job.localShop?.name, 'Sharma Foods');
+    expect(job.localShop?.displayPhone, '+91 9876543210');
+    expect(job.localShop?.addressSummary, contains('Shop 12, Main Market'));
+    expect(job.localShop?.canOpenMap, isTrue);
+    expect(job.localShop?.canCall, isTrue);
+  });
+
+  test('DeliveryJobItem parses imageUrl for partner item list', () {
+    final item = DeliveryJobItem.fromJson({
+      'id': 'oi-1',
+      'productName': 'Fresh Milk',
+      'variantLabel': '1L',
+      'unitPricePaise': 6000,
+      'quantity': 2,
+      'lineTotalPaise': 12000,
+      'imageUrl': 'https://cdn.example.com/milk.jpg',
+      'isLocalShop': false,
+    });
+
+    expect(item.imageUrl, 'https://cdn.example.com/milk.jpg');
+    expect(item.productName, 'Fresh Milk');
+    expect(item.quantity, 2);
+  });
 }

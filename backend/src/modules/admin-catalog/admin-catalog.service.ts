@@ -96,6 +96,8 @@ export class AdminCatalogService {
             unitLabel: row.unit_label as string,
             pricePaise: Number(row.price_paise ?? 0),
             mrpPaise: Number(row.mrp_paise ?? 0),
+            costPricePaise:
+              row.cost_price_paise == null ? null : Number(row.cost_price_paise),
             quantityAvailable: Number(row.quantity_available ?? 0),
           }
         : null,

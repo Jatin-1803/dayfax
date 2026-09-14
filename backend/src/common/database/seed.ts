@@ -434,6 +434,11 @@ async function seed(): Promise<void> {
         ? `Seeded admin_users: ${adminEmail}`
         : `Updated admin_users password: ${adminEmail}`,
     );
+    await pool.execute(
+      `INSERT IGNORE INTO admin_user_roles (admin_user_id, role_id)
+       VALUES (?, 'r0000001-0000-4000-8000-000000000001')`,
+      [result.id],
+    );
   }
 
   // Optional legacy: ADMIN role on app OTP users (SEED_ADMIN_PHONE) — not used by admin SPA

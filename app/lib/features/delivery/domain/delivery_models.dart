@@ -33,25 +33,60 @@ double? _coordFromJson(Object? value) {
 
 class DeliveryStats extends Equatable {
   const DeliveryStats({
+    required this.date,
     required this.available,
     required this.active,
-    required this.completedToday,
+    required this.ordersDelivered,
+    required this.cancelled,
+    required this.returns,
+    required this.cashCollectedPaise,
+    required this.upiCollectedPaise,
   });
 
+  final String date;
   final int available;
   final int active;
-  final int completedToday;
+  final int ordersDelivered;
+  final int cancelled;
+  final int returns;
+  final int cashCollectedPaise;
+  final int upiCollectedPaise;
 
   factory DeliveryStats.fromJson(Map<String, dynamic> json) {
     return DeliveryStats(
+      date: json['date'] as String? ?? '',
       available: (json['available'] as num?)?.toInt() ?? 0,
       active: (json['active'] as num?)?.toInt() ?? 0,
-      completedToday: (json['completedToday'] as num?)?.toInt() ?? 0,
+      ordersDelivered: (json['ordersDelivered'] as num?)?.toInt() ?? 0,
+      cancelled: (json['cancelled'] as num?)?.toInt() ?? 0,
+      returns: (json['returns'] as num?)?.toInt() ?? 0,
+      cashCollectedPaise: (json['cashCollectedPaise'] as num?)?.toInt() ?? 0,
+      upiCollectedPaise: (json['upiCollectedPaise'] as num?)?.toInt() ?? 0,
     );
   }
 
   @override
-  List<Object?> get props => [available, active, completedToday];
+  List<Object?> get props => [
+        date,
+        available,
+        active,
+        ordersDelivered,
+        cancelled,
+        returns,
+        cashCollectedPaise,
+        upiCollectedPaise,
+      ];
+}
+
+/// Jobs list key. [date] is only used for the completed tab (`YYYY-MM-DD`).
+class DeliveryJobsQuery extends Equatable {
+  const DeliveryJobsQuery(this.tab, {this.date});
+
+  final DeliveryJobsTab tab;
+  final String? date;
+
+  @override
+  List<Object?> get props => [tab, date];
 }
 
 class DeliveryStore extends Equatable {
@@ -264,6 +299,7 @@ class DeliveryJobItem extends Equatable {
     required this.quantity,
     required this.lineTotalPaise,
     this.imageUrl,
+    this.isLocalShop = false,
   });
 
   final String id;
@@ -273,6 +309,7 @@ class DeliveryJobItem extends Equatable {
   final int quantity;
   final int lineTotalPaise;
   final String? imageUrl;
+  final bool isLocalShop;
 
   factory DeliveryJobItem.fromJson(Map<String, dynamic> json) {
     return DeliveryJobItem(
@@ -283,6 +320,7 @@ class DeliveryJobItem extends Equatable {
       quantity: (json['quantity'] as num).toInt(),
       lineTotalPaise: (json['lineTotalPaise'] as num).toInt(),
       imageUrl: json['imageUrl'] as String?,
+      isLocalShop: json['isLocalShop'] as bool? ?? false,
     );
   }
 
@@ -368,6 +406,43 @@ class PaymentCheckResult extends Equatable {
   List<Object?> get props => [status, amountPaise];
 }
 
+class ReturnPickupItem extends Equatable {
+  const ReturnPickupItem({
+    required this.productName,
+    required this.quantity,
+    this.variantLabel,
+  });
+
+  final String productName;
+  final String? variantLabel;
+  final int quantity;
+
+  String get displayLine {
+    final variant = variantLabel?.trim();
+    final name = variant == null || variant.isEmpty ? productName : '$productName · $variant';
+    return '$name × $quantity';
+  }
+
+  factory ReturnPickupItem.fromJson(Map<String, dynamic> json) {
+    return ReturnPickupItem(
+      productName: json['productName'] as String? ?? '',
+      variantLabel: json['variantLabel'] as String?,
+      quantity: (json['quantity'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  factory ReturnPickupItem.fromJobItem(DeliveryJobItem item) {
+    return ReturnPickupItem(
+      productName: item.productName,
+      variantLabel: item.variantLabel,
+      quantity: item.quantity,
+    );
+  }
+
+  @override
+  List<Object?> get props => [productName, variantLabel, quantity];
+}
+
 class DeliveryJob extends Equatable {
   const DeliveryJob({
     required this.orderId,
@@ -377,6 +452,7 @@ class DeliveryJob extends Equatable {
     required this.currency,
     required this.placedAt,
     required this.store,
+    this.localShop,
     required this.address,
     this.notes,
     this.customer,
@@ -384,6 +460,10 @@ class DeliveryJob extends Equatable {
     this.payment,
     this.otpAllowed = false,
     this.items = const [],
+    this.returnItems = const [],
+    this.purpose = 'DELIVERY',
+    this.returnRequestId,
+    this.returnNote,
   });
 
   final String orderId;
@@ -394,23 +474,61 @@ class DeliveryJob extends Equatable {
   final String? notes;
   final DateTime placedAt;
   final DeliveryStore store;
+  final DeliveryStore? localShop;
   final DeliveryJobAddress address;
   final DeliveryCustomerContact? customer;
   final DeliveryAssignment? assignment;
   final DeliveryJobPayment? payment;
   final bool otpAllowed;
   final List<DeliveryJobItem> items;
+  final List<ReturnPickupItem> returnItems;
+  final String purpose;
+  final String? returnRequestId;
+  final String? returnNote;
 
+  List<ReturnPickupItem> get collectItems {
+    if (returnItems.isNotEmpty) return returnItems;
+    if (!isReturnPickup) return const [];
+    return items.map(ReturnPickupItem.fromJobItem).toList();
+  }
+
+  String? get customerName {
+    final name = address.fullName?.trim();
+    if (name == null || name.isEmpty) return null;
+    return name;
+  }
+
+  bool get isReturnPickup => purpose == 'RETURN_PICKUP';
+
+  String get listTitleKey => isReturnPickup ? 'delivery.return_for_order' : 'delivery.order_details';
+
+  String get addressLabelKey =>
+      isReturnPickup ? 'delivery.pickup_from_customer' : 'delivery.delivery_address';
+
+  String get confirmCodeLabelKey =>
+      isReturnPickup ? 'delivery.pickup_code_label' : 'delivery.otp_label';
+
+  String get confirmTitleKey =>
+      isReturnPickup ? 'delivery.collect_items_title' : 'delivery.mark_delivered_title';
+
+  String get successTitleKey =>
+      isReturnPickup ? 'delivery.pickup_collected_title' : 'delivery.delivered_title';
+
+  String get successMessageKey =>
+      isReturnPickup ? 'delivery.pickup_collected_message' : 'delivery.delivered_message';
   bool get canClaim => assignment == null;
   bool get canAccept => assignment?.isAssigned ?? false;
   bool get canStartDelivery =>
       assignment != null && (assignment!.isAccepted || assignment!.isAssigned);
-  bool get canComplete =>
-      assignment != null && assignment!.isInProgress && otpAllowed;
+  bool get canComplete => assignment != null &&
+      otpAllowed &&
+      (isReturnPickup
+          ? (assignment!.isAccepted || assignment!.isInProgress)
+          : assignment!.isInProgress);
   bool get canReject =>
       assignment != null && (assignment!.isAssigned || assignment!.isAccepted);
   bool get needsCodCollection =>
-      payment?.isCod == true && payment?.isCaptured != true;
+      !isReturnPickup && payment?.isCod == true && payment?.isCaptured != true;
   bool get isPaidOnline =>
       payment != null && !payment!.isCod && payment!.isCaptured;
 
@@ -418,12 +536,13 @@ class DeliveryJob extends Equatable {
       (address.latitude != null && address.longitude != null) ||
       address.summary.trim().isNotEmpty;
 
-  String get detailRouteId => assignment?.id ?? orderId;
+  String get detailRouteId => assignment?.id ?? returnRequestId ?? orderId;
 
   factory DeliveryJob.fromJson(Map<String, dynamic> json) {
     final customerJson = json['customer'] as Map<String, dynamic>?;
     final assignmentJson = json['assignment'] as Map<String, dynamic>?;
     final itemsJson = json['items'] as List<dynamic>?;
+    final returnItemsJson = json['returnItems'] as List<dynamic>?;
     final paymentJson = json['payment'] as Map<String, dynamic>?;
     return DeliveryJob(
       orderId: json['orderId'] as String,
@@ -434,6 +553,9 @@ class DeliveryJob extends Equatable {
       notes: json['notes'] as String?,
       placedAt: DateTime.parse(json['placedAt'] as String),
       store: DeliveryStore.fromJson(json['store'] as Map<String, dynamic>? ?? const {}),
+      localShop: json['localShop'] is Map<String, dynamic>
+          ? DeliveryStore.fromJson(json['localShop'] as Map<String, dynamic>)
+          : null,
       address: DeliveryJobAddress.fromJson(
         json['address'] as Map<String, dynamic>? ?? const {},
       ),
@@ -442,6 +564,12 @@ class DeliveryJob extends Equatable {
           assignmentJson == null ? null : DeliveryAssignment.fromJson(assignmentJson),
       payment: paymentJson == null ? null : DeliveryJobPayment.fromJson(paymentJson),
       otpAllowed: json['otpAllowed'] as bool? ?? false,
+      purpose: json['purpose'] as String? ?? 'DELIVERY',
+      returnRequestId: json['returnRequestId'] as String?,
+      returnNote: json['returnNote'] as String?,
+      returnItems: returnItemsJson == null
+          ? const []
+          : returnItemsJson.whereType<Map<String, dynamic>>().map(ReturnPickupItem.fromJson).toList(),
       items: itemsJson == null
           ? const []
           : itemsJson.whereType<Map<String, dynamic>>().map(DeliveryJobItem.fromJson).toList(),
@@ -450,7 +578,7 @@ class DeliveryJob extends Equatable {
 
   @override
   List<Object?> get props =>
-      [orderId, orderNumber, assignment?.id, assignment?.status, payment?.status, otpAllowed];
+      [orderId, orderNumber, assignment?.id, assignment?.status, payment?.status, otpAllowed, purpose];
 }
 
 class DeliveryJobsPage extends Equatable {

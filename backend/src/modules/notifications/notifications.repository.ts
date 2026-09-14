@@ -90,6 +90,19 @@ export class NotificationsRepository {
     return result.affectedRows > 0;
   }
 
+  async deleteByOrderId(
+    userId: string,
+    orderId: string,
+    conn: Pool | PoolConnection = this.db,
+  ): Promise<void> {
+    await conn.query(
+      `DELETE FROM notifications
+       WHERE user_id = ?
+         AND JSON_UNQUOTE(JSON_EXTRACT(meta_json, '$.orderId')) = ?`,
+      [userId, orderId],
+    );
+  }
+
   async markAllRead(userId: string): Promise<number> {
     const [result] = await this.db.query<ResultSetHeader>(
       `UPDATE notifications SET is_read = 1

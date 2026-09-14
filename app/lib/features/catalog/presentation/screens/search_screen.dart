@@ -38,6 +38,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     _controller = TextEditingController();
     _loadRecent();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       _focusNode.requestFocus();
     });
   }
@@ -59,6 +60,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   @override
   void dispose() {
+    _focusNode.unfocus();
     _controller.dispose();
     _focusNode.dispose();
     super.dispose();

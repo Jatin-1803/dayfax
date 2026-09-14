@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -15,7 +17,7 @@ import '../../../../shared/widgets/state_widgets.dart';
 import '../../domain/order_models.dart';
 import '../orders_view_models.dart';
 
-class TrackOrderScreen extends ConsumerWidget {
+class TrackOrderScreen extends ConsumerStatefulWidget {
   const TrackOrderScreen({super.key, required this.idOrNumber});
 
   final String idOrNumber;
@@ -33,16 +35,64 @@ class TrackOrderScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final asyncOrder = ref.watch(orderDetailViewModelProvider(idOrNumber));
+  ConsumerState<TrackOrderScreen> createState() => _TrackOrderScreenState();
+}
+
+class _TrackOrderScreenState extends ConsumerState<TrackOrderScreen>
+    with WidgetsBindingObserver {
+  Timer? _poll;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _refresh());
+    _poll = Timer.periodic(const Duration(seconds: 10), (_) => _refreshIfActive());
+  }
+
+  @override
+  void dispose() {
+    _poll?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant TrackOrderScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.idOrNumber != widget.idOrNumber) {
+      _refresh();
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refresh();
+    }
+  }
+
+  void _refresh() {
+    ref.read(orderDetailViewModelProvider(widget.idOrNumber).notifier).load(silent: true);
+  }
+
+  void _refreshIfActive() {
+    final asyncOrder = ref.read(orderDetailViewModelProvider(widget.idOrNumber));
+    final order = asyncOrder.asData?.value;
+    if (order == null || !TrackOrderScreen.isActiveStatus(order.status)) return;
+    _refresh();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final asyncOrder = ref.watch(orderDetailViewModelProvider(widget.idOrNumber));
 
     return Scaffold(
       appBar: AppBar(
         title: Text(ref.t('orders.track')),
         actions: [
           IconButton(
-            onPressed: () =>
-                ref.read(orderDetailViewModelProvider(idOrNumber).notifier).load(),
+            onPressed: _refresh,
             icon: const Icon(Icons.refresh),
           ),
         ],
@@ -52,9 +102,13 @@ class TrackOrderScreen extends ConsumerWidget {
         error: (error, _) => ErrorState(
           message: error is AppFailure ? error.message : 'orders.could_not_load',
           onRetry: () =>
-              ref.read(orderDetailViewModelProvider(idOrNumber).notifier).load(),
+              ref.read(orderDetailViewModelProvider(widget.idOrNumber).notifier).load(),
         ),
-        data: (order) => _TrackBody(order: order),
+        data: (order) => RefreshIndicator(
+          color: CustomerColors.primary,
+          onRefresh: () async => _refresh(),
+          child: _TrackBody(order: order),
+        ),
       ),
     );
   }
@@ -70,6 +124,7 @@ class _TrackBody extends StatelessWidget {
     final timeline = order.timeline;
 
     return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(CustomerSpacing.marginMobile),
       children: [
         Row(
@@ -77,7 +132,19 @@ class _TrackBody extends StatelessWidget {
             Expanded(
               child: Text(order.orderNumber, style: Theme.of(context).textTheme.headlineSmall),
             ),
-            StatusChip(status: order.status),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                StatusChip(status: order.status),
+                if (order.returnRequest != null) ...[
+                  const SizedBox(height: CustomerSpacing.xs),
+                  StatusChip(
+                    status: order.returnRequest!.status,
+                    label: context.t(order.returnStatusChipKey!),
+                  ),
+                ],
+              ],
+            ),
           ],
         ),
         const SizedBox(height: CustomerSpacing.md),

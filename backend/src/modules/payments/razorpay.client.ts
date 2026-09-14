@@ -147,6 +147,41 @@ export async function createQrCode(input: {
   return payload;
 }
 
+export async function refundPayment(input: {
+  razorpayPaymentId: string;
+  amountPaise: number;
+}): Promise<{ id: string }> {
+  if (!isRazorpayConfigured()) {
+    throw new ValidationError('Online payments are not configured');
+  }
+
+  const response = await fetch(
+    `https://api.razorpay.com/v1/payments/${encodeURIComponent(input.razorpayPaymentId)}/refund`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: basicAuthHeader(),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ amount: input.amountPaise }),
+    },
+  );
+
+  const payload = (await response.json()) as {
+    id?: string;
+    error?: { description?: string };
+  };
+
+  if (!response.ok || !payload.id) {
+    throw new AppError(payload.error?.description ?? 'Could not refund this payment', {
+      statusCode: 502,
+      code: 'RAZORPAY_REFUND_FAILED',
+    });
+  }
+
+  return { id: payload.id };
+}
+
 export async function listQrPayments(qrId: string): Promise<RazorpayPaymentEntity[]> {
   if (!isRazorpayConfigured()) {
     throw new ValidationError('Online payments are not configured');

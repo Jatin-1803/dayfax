@@ -17,6 +17,7 @@ export function UsersPage() {
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<AdminUser | null>(null);
   const [busy, setBusy] = useState(false);
+  const [accountReason, setAccountReason] = useState('');
 
   async function load(nextPage = page) {
     setLoading(true);
@@ -58,6 +59,29 @@ export function UsersPage() {
         const detail = await apiRequest<AdminUser>(`/admin/users/${userId}`);
         setSelected(detail);
       }
+    } catch (err) {
+      toast.push(err instanceof ApiError ? err.message : 'Failed', 'error');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function accountAction(userId: string, action: string, statusLabel: string) {
+    const reason = accountReason.trim();
+    if (reason.length < 3) {
+      toast.push('Add a reason before changing the account', 'error');
+      return;
+    }
+    setBusy(true);
+    try {
+      await apiRequest(`/admin/users/${userId}/${action}`, {
+        method: 'POST',
+        body: JSON.stringify({ reason: reason.trim() }),
+      });
+      toast.push(statusLabel, 'success');
+      setAccountReason('');
+      await load(page);
+      setSelected(null);
     } catch (err) {
       toast.push(err instanceof ApiError ? err.message : 'Failed', 'error');
     } finally {
@@ -229,9 +253,30 @@ export function UsersPage() {
               <code>{selected.id}</code>
             </p>
             <p>
+              Status: <span className="badge">{selected.status}</span>
+            </p>
+            <p>
               Current roles:{' '}
               {selected.roles.length ? selected.roles.join(', ') : 'none'}
             </p>
+            <div className="field">
+              <label htmlFor="account-reason">Reason for account change</label>
+              <input
+                id="account-reason"
+                value={accountReason}
+                onChange={(event) => setAccountReason(event.target.value)}
+                placeholder="Required for suspend, ban, or logout"
+              />
+            </div>
+            <div className="row-actions">
+              <button type="button" className="btn btn-sm" disabled={busy} onClick={() => void accountAction(selected.id, 'activate', 'Activated')}>Activate</button>
+              <button type="button" className="btn btn-sm btn-secondary" disabled={busy} onClick={() => void accountAction(selected.id, 'deactivate', 'Deactivated')}>Deactivate</button>
+              <button type="button" className="btn btn-sm btn-secondary" disabled={busy} onClick={() => void accountAction(selected.id, 'suspend', 'Suspended')}>Suspend</button>
+              <button type="button" className="btn btn-sm btn-secondary" disabled={busy} onClick={() => void accountAction(selected.id, 'unsuspend', 'Unsuspended')}>Unsuspend</button>
+              <button type="button" className="btn btn-danger btn-sm" disabled={busy} onClick={() => void accountAction(selected.id, 'ban', 'Banned')}>Ban</button>
+              <button type="button" className="btn btn-sm" disabled={busy} onClick={() => void accountAction(selected.id, 'unban', 'Unbanned')}>Unban</button>
+              <button type="button" className="btn btn-sm btn-secondary" disabled={busy} onClick={() => void accountAction(selected.id, 'force-logout', 'Signed out')}>Force logout</button>
+            </div>
             <div className="stack">
               {ALL_ROLES.map((r) => {
                 const has = selected.roles.includes(r);

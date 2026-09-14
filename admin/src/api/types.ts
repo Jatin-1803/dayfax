@@ -17,6 +17,8 @@ export interface AuthUser {
   email: string;
   fullName: string | null;
   roles: RoleCode[];
+  permissions?: string[];
+  consoleRoles?: string[];
 }
 
 export interface PaginationMeta {
@@ -46,6 +48,7 @@ export interface AdminStore {
   latitude: number | null;
   longitude: number | null;
   isPopular: boolean;
+  onlinePaymentOnly: boolean;
   isActive: boolean;
   addressSummary: string | null;
 }
@@ -66,6 +69,7 @@ export interface StoreProduct {
   unitLabel: string | null;
   pricePaise: number;
   mrpPaise: number | null;
+  costPricePaise: number | null;
   quantityAvailable: number;
 }
 
@@ -95,6 +99,7 @@ export interface CatalogProduct {
     unitLabel: string;
     pricePaise: number;
     mrpPaise: number | null;
+    costPricePaise?: number | null;
     quantityAvailable: number;
     inStock: boolean;
   } | null;
@@ -174,6 +179,65 @@ export interface DeliveryZoneRow {
   etaMinutes: number;
   isActive: boolean;
   serviceAreaName?: string | null;
+}
+
+export type HomeCollectionStatus = 'live' | 'scheduled' | 'expired' | 'disabled';
+
+export type HomeCollectionAvailability =
+  | 'in_stock'
+  | 'out_of_stock'
+  | 'unavailable'
+  | 'inactive'
+  | 'deleted';
+
+export interface AdminHomeCollectionItem {
+  productId: string;
+  sortOrder: number;
+  name: string | null;
+  slug: string | null;
+  imageUrl: string | null;
+  availability: HomeCollectionAvailability;
+}
+
+export interface AdminHomeCollection {
+  id: string;
+  headline: string;
+  headlineHi: string | null;
+  priority: number;
+  isActive: boolean;
+  startAt: string;
+  endAt: string;
+  createdAt: string;
+  updatedAt: string;
+  status: HomeCollectionStatus;
+  isLiveWinner: boolean;
+  items: AdminHomeCollectionItem[];
+}
+
+export interface PromoNotification {
+  id: string;
+  audience: 'CUSTOMERS' | 'PARTNERS' | 'ALL';
+  title: string;
+  titleHi: string;
+  body: string;
+  bodyHi: string;
+  recipientCount: number;
+  sentCount: number;
+  createdAt: string;
+}
+
+export interface OrderDeliveryAlert {
+  id: string;
+  orderId: string;
+  orderNumber: string | null;
+  deliveryBoyId: string;
+  partnerName: string | null;
+  notificationType: string;
+  status: string;
+  attemptCount: number;
+  failureReason: string | null;
+  sentAt: string | null;
+  createdAt: string;
 }
 
 export interface AdminBanner {

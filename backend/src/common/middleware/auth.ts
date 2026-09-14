@@ -1,6 +1,9 @@
 import type { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { env } from '../../config/env.js';
+import { assertAdminAccess, assertUserAccess } from '../auth/account-access.js';
+import { hasPermission, loadAdminAccess } from '../auth/admin-permissions.js';
+import { ACCESS_CLOCK_TOLERANCE_SECONDS } from '../auth/token-session.js';
 import { ForbiddenError, UnauthorizedError } from '../errors/app-error.js';
 
 export type RoleCode = 'CUSTOMER' | 'DELIVERY_PARTNER' | 'ADMIN';
@@ -12,6 +15,7 @@ export interface AuthUser {
   email?: string;
   roles: RoleCode[];
   principal: AuthPrincipal;
+  sessionId?: string;
 }
 
 declare global {
@@ -29,6 +33,8 @@ interface AccessTokenPayload {
   roles: RoleCode[];
   type: 'access';
   principal?: AuthPrincipal;
+  sid?: string;
+  iat?: number;
 }
 
 export function authenticate(req: Request, _res: Response, next: NextFunction): void {
@@ -39,23 +45,62 @@ export function authenticate(req: Request, _res: Response, next: NextFunction): 
   }
 
   const token = header.slice('Bearer '.length).trim();
+  let payload: AccessTokenPayload;
   try {
-    const payload = jwt.verify(token, env.JWT_ACCESS_SECRET) as AccessTokenPayload;
-    if (payload.type !== 'access') {
-      next(new UnauthorizedError('Invalid token'));
+    payload = jwt.verify(token, env.JWT_ACCESS_SECRET, {
+      clockTolerance: ACCESS_CLOCK_TOLERANCE_SECONDS,
+    }) as AccessTokenPayload;
+  } catch (error) {
+    if (error instanceof jwt.TokenExpiredError) {
+      next(new UnauthorizedError('Invalid or expired token', 'TOKEN_EXPIRED'));
       return;
     }
+    next(new UnauthorizedError('Invalid or expired token', 'TOKEN_INVALID'));
+    return;
+  }
+
+  if (payload.type !== 'access' || !payload.sub) {
+    next(new UnauthorizedError('Invalid token', 'TOKEN_INVALID'));
+    return;
+  }
+
     req.user = {
       id: payload.sub,
       phone: payload.phone ?? '',
       email: payload.email,
-      roles: payload.roles,
+      roles: payload.roles ?? [],
       principal: payload.principal ?? 'user',
+      sessionId: payload.sid,
     };
-    next();
-  } catch {
-    next(new UnauthorizedError('Invalid or expired token'));
-  }
+
+  const access = {
+    sessionId: payload.sid,
+    issuedAt: payload.iat,
+  };
+  const check =
+    req.user.principal === 'admin'
+      ? assertAdminAccess({ adminId: payload.sub, ...access })
+      : assertUserAccess({ userId: payload.sub, ...access });
+
+  void check.then(() => next()).catch(next);
+}
+
+export function requirePermission(...codes: string[]) {
+  return (req: Request, _res: Response, next: NextFunction): void => {
+    if (!req.user || req.user.principal !== 'admin') {
+      next(new ForbiddenError());
+      return;
+    }
+    void loadAdminAccess(req.user.id)
+      .then((access) => {
+        if (codes.some((code) => hasPermission(access.permissions, code))) {
+          next();
+          return;
+        }
+        next(new ForbiddenError('You do not have permission to perform this action'));
+      })
+      .catch(next);
+  };
 }
 
 export function requireRoles(...allowed: RoleCode[]) {

@@ -17,7 +17,9 @@ class UnauthorizedFailure extends AppFailure {
 }
 
 class ValidationFailure extends AppFailure {
-  const ValidationFailure([super.message = 'error.check_input']);
+  const ValidationFailure([super.message = 'error.check_input', this.params]);
+
+  final Map<String, String>? params;
 }
 
 class NotFoundFailure extends AppFailure {

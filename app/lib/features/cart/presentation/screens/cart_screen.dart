@@ -11,6 +11,7 @@ import '../../../../core/theme/customer/customer_spacing.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/bill_summary.dart';
 import '../../../../shared/widgets/eta_banner.dart';
+import '../../../../shared/widgets/local_shop_note.dart';
 import '../../../../shared/widgets/price_text.dart';
 import '../../../../shared/widgets/qty_stepper.dart';
 import '../../../../shared/widgets/state_widgets.dart';
@@ -166,6 +167,11 @@ class CartScreen extends ConsumerWidget {
               trailing: const Icon(Icons.chevron_right),
             ),
           ),
+          if (state.cart.items.any((item) => item.isLocalShop) &&
+              state.cart.items.every((item) => item.isLocalShop)) ...[
+            const SizedBox(height: CustomerSpacing.md),
+            const LocalShopNote(),
+          ],
           if (quote != null && quote.etaMinutes > 0) ...[
             const SizedBox(height: CustomerSpacing.md),
             EtaBanner(etaMinutes: quote.etaMinutes),
@@ -185,19 +191,7 @@ class CartScreen extends ConsumerWidget {
             ),
           ],
           const SizedBox(height: CustomerSpacing.lg),
-          ...state.cart.items.map(
-            (item) => Padding(
-              padding: const EdgeInsets.only(bottom: CustomerSpacing.md),
-              child: _CartItemTile(
-                item: item,
-                enabled: !state.isMutating,
-                onIncrement: () => notifier.setQuantity(item.id, item.quantity + 1),
-                onDecrement: () => notifier.setQuantity(item.id, item.quantity - 1),
-                onRemove: () => notifier.setQuantity(item.id, 0),
-                onTap: () => context.push('/products/${item.product.slug}'),
-              ),
-            ),
-          ),
+          ..._itemGroups(context, ref, state),
           BillSummary(
             itemTotalPaise: quote?.itemTotalPaise ?? state.cart.subtotalPaise,
             deliveryFeePaise: quote?.deliveryFeePaise ?? 0,
@@ -211,6 +205,77 @@ class CartScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+List<Widget> _itemGroups(BuildContext context, WidgetRef ref, CartUiState state) {
+  final notifier = ref.read(cartViewModelProvider.notifier);
+  final localItems = state.cart.items.where((item) => item.isLocalShop).toList();
+  final regularItems = state.cart.items.where((item) => !item.isLocalShop).toList();
+  final showHeadings = localItems.isNotEmpty && regularItems.isNotEmpty;
+
+  Widget tile(CartItem item) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: CustomerSpacing.md),
+      child: _CartItemTile(
+        item: item,
+        enabled: !state.isMutating,
+        onIncrement: () => notifier.setQuantity(item.id, item.quantity + 1),
+        onDecrement: () => notifier.setQuantity(item.id, item.quantity - 1),
+        onRemove: () => notifier.setQuantity(item.id, 0),
+        onTap: () => context.push('/products/${item.product.slug}'),
+      ),
+    );
+  }
+
+  Widget group({
+    required String title,
+    required String note,
+    required int subtotalPaise,
+    required List<CartItem> items,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (showHeadings) ...[
+          Row(
+            children: [
+              Expanded(
+                child: Text(title, style: Theme.of(context).textTheme.titleMedium),
+              ),
+              PriceText(paise: subtotalPaise),
+            ],
+          ),
+          const SizedBox(height: CustomerSpacing.xs),
+          Text(
+            note,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: CustomerColors.onSurfaceVariant,
+                  height: 1.35,
+                ),
+          ),
+          const SizedBox(height: CustomerSpacing.sm),
+        ],
+        ...items.map(tile),
+      ],
+    );
+  }
+
+  return [
+    if (localItems.isNotEmpty)
+      group(
+        title: context.t('cart.local_shop_group'),
+        note: context.t('cart.local_shop_group_note'),
+        subtotalPaise: state.cart.localShopSubtotalPaise,
+        items: localItems,
+      ),
+    if (regularItems.isNotEmpty)
+      group(
+        title: context.t('cart.regular_group'),
+        note: context.t('cart.regular_group_note'),
+        subtotalPaise: state.cart.regularSubtotalPaise,
+        items: regularItems,
+      ),
+  ];
 }
 
 class _CartItemTile extends StatelessWidget {

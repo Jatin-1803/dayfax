@@ -4,6 +4,14 @@ import { AppError, ServiceUnavailableError, ValidationError } from '../errors/ap
 import { logger } from '../logger/logger.js';
 import { env } from '../../config/env.js';
 
+const OTP_DETAIL_CODES = new Set(['OTP_INVALID', 'OTP_ATTEMPTS_EXHAUSTED']);
+
+function shouldExposeErrorDetails(error: AppError): boolean {
+  if (error.details === undefined) return false;
+  if (OTP_DETAIL_CODES.has(error.code)) return true;
+  return env.NODE_ENV !== 'production';
+}
+
 function isPoolQueueError(err: unknown): boolean {
   if (!err || typeof err !== 'object') return false;
   const message = err instanceof Error ? err.message : String(err);
@@ -63,9 +71,7 @@ export function errorHandler(
       error: {
         code: normalized.code,
         requestId,
-        ...(normalized.details !== undefined && env.NODE_ENV !== 'production'
-          ? { details: normalized.details }
-          : {}),
+        ...(shouldExposeErrorDetails(normalized) ? { details: normalized.details } : {}),
       },
     });
     return;

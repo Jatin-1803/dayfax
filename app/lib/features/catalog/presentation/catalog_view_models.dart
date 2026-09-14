@@ -18,17 +18,31 @@ class CatalogLoading extends CatalogUiState {
 class CatalogReady extends CatalogUiState {
   const CatalogReady({
     required this.categories,
-    required this.popular,
-    required this.grocery,
-    required this.vegetables,
-    required this.cosmetics,
+    required this.products,
+    this.pagination,
+    this.isLoadingMore = false,
   });
 
   final List<CatalogCategory> categories;
-  final List<CatalogProduct> popular;
-  final List<CatalogProduct> grocery;
-  final List<CatalogProduct> vegetables;
-  final List<CatalogProduct> cosmetics;
+  final List<CatalogProduct> products;
+  final PaginationMeta? pagination;
+  final bool isLoadingMore;
+
+  bool get hasMore => pagination?.hasNextPage ?? false;
+
+  CatalogReady copyWith({
+    List<CatalogCategory>? categories,
+    List<CatalogProduct>? products,
+    PaginationMeta? pagination,
+    bool? isLoadingMore,
+  }) {
+    return CatalogReady(
+      categories: categories ?? this.categories,
+      products: products ?? this.products,
+      pagination: pagination ?? this.pagination,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+    );
+  }
 }
 
 class CatalogError extends CatalogUiState {
@@ -38,58 +52,70 @@ class CatalogError extends CatalogUiState {
 }
 
 class HomeCatalogViewModel extends Notifier<CatalogUiState> {
+  static const _pageLimit = 20;
+
   @override
   CatalogUiState build() {
     ref.listen(appLangCodeProvider, (previous, next) {
       if (previous != null && previous != next) {
-        load();
+        load(reset: true);
       }
     });
-    Future.microtask(load);
+    Future.microtask(() => load(reset: true));
     return const CatalogLoading();
   }
 
   CatalogRepository get _repo => ref.read(catalogRepositoryProvider);
   String get _lang => ref.read(appLangCodeProvider);
 
-  Future<void> load() async {
-    state = const CatalogLoading();
+  Future<void> load({bool reset = false}) async {
+    final current = state;
+    if (!reset && current is CatalogReady) {
+      if (!current.hasMore || current.isLoadingMore) return;
+      state = current.copyWith(isLoadingMore: true);
+    } else if (reset || current is! CatalogReady) {
+      state = const CatalogLoading();
+    }
+
+    final nextPage = reset
+        ? 1
+        : current is CatalogReady
+            ? (current.pagination?.page ?? 0) + 1
+            : 1;
+
     try {
       final lang = _lang;
-      final results = await Future.wait([
-        _repo.listCategories(lang: lang),
-        _repo.listProducts(page: 1, limit: 16, lang: lang),
-        _productsForSlug('grocery', lang: lang),
-        _productsForSlug('vegetables', lang: lang),
-        _productsForSlug('cosmetics', lang: lang),
-      ]);
-      state = CatalogReady(
-        categories: results[0] as List<CatalogCategory>,
-        popular: (results[1] as ProductPage).items,
-        grocery: results[2] as List<CatalogProduct>,
-        vegetables: results[3] as List<CatalogProduct>,
-        cosmetics: results[4] as List<CatalogProduct>,
-      );
-    } on AppFailure catch (failure) {
-      state = CatalogError(failure.message);
-    }
-  }
+      if (reset || current is! CatalogReady) {
+        final results = await Future.wait([
+          _repo.listCategories(lang: lang),
+          _repo.listProducts(page: 1, limit: _pageLimit, lang: lang),
+        ]);
+        final page = results[1] as ProductPage;
+        state = CatalogReady(
+          categories: results[0] as List<CatalogCategory>,
+          products: page.items,
+          pagination: page.pagination,
+        );
+        return;
+      }
 
-  /// Missing category rails must not fail the whole home screen.
-  Future<List<CatalogProduct>> _productsForSlug(
-    String categorySlug, {
-    required String lang,
-  }) async {
-    try {
       final page = await _repo.listProducts(
-        page: 1,
-        limit: 12,
-        categorySlug: categorySlug,
+        page: nextPage,
+        limit: _pageLimit,
         lang: lang,
       );
-      return page.items;
-    } on NotFoundFailure {
-      return const [];
+      final ready = current;
+      state = ready.copyWith(
+        products: [...ready.products, ...page.items],
+        pagination: page.pagination,
+        isLoadingMore: false,
+      );
+    } on AppFailure catch (failure) {
+      if (current is CatalogReady && !reset) {
+        state = current.copyWith(isLoadingMore: false);
+      } else {
+        state = CatalogError(failure.message);
+      }
     }
   }
 }
@@ -189,11 +215,14 @@ class ProductListState {
   }
 }
 
-class CategoryProductsViewModel extends FamilyNotifier<ProductListState, String> {
+class CategoryProductsViewModel extends Notifier<ProductListState> {
+  CategoryProductsViewModel(this.arg);
+
+  final String arg;
   Timer? _debounce;
 
   @override
-  ProductListState build(String arg) {
+  ProductListState build() {
     ref.onDispose(() => _debounce?.cancel());
     ref.listen(appLangCodeProvider, (previous, next) {
       if (previous != null && previous != next) {
@@ -285,9 +314,13 @@ class CategoryProductsViewModel extends FamilyNotifier<ProductListState, String>
 final categoryProductsViewModelProvider = NotifierProvider.family<
     CategoryProductsViewModel, ProductListState, String>(CategoryProductsViewModel.new);
 
-class ProductDetailViewModel extends FamilyNotifier<AsyncValue<CatalogProductDetail>, String> {
+class ProductDetailViewModel extends Notifier<AsyncValue<CatalogProductDetail>> {
+  ProductDetailViewModel(this.arg);
+
+  final String arg;
+
   @override
-  AsyncValue<CatalogProductDetail> build(String arg) {
+  AsyncValue<CatalogProductDetail> build() {
     ref.listen(appLangCodeProvider, (previous, next) {
       if (previous != null && previous != next) {
         load();
@@ -315,9 +348,13 @@ final productDetailViewModelProvider = NotifierProvider.family<
   ProductDetailViewModel.new,
 );
 
-class SimilarProductsViewModel extends FamilyNotifier<AsyncValue<List<CatalogProduct>>, String> {
+class SimilarProductsViewModel extends Notifier<AsyncValue<List<CatalogProduct>>> {
+  SimilarProductsViewModel(this.arg);
+
+  final String arg;
+
   @override
-  AsyncValue<List<CatalogProduct>> build(String arg) {
+  AsyncValue<List<CatalogProduct>> build() {
     ref.listen(appLangCodeProvider, (previous, next) {
       if (previous != null && previous != next) {
         load();

@@ -22,6 +22,8 @@ class DeliveryQuote extends Equatable {
     this.freeDeliveryAbovePaise,
     this.freeDeliveryApplied = false,
     this.distanceKm,
+    this.isLocalShop = false,
+    this.codAllowed = true,
   });
 
   final String? addressId;
@@ -39,6 +41,8 @@ class DeliveryQuote extends Equatable {
   final int grandTotalPaise;
   final bool meetsMinOrder;
   final int amountToMinOrderPaise;
+  final bool isLocalShop;
+  final bool codAllowed;
 
   factory DeliveryQuote.fromJson(Map<String, dynamic> json) {
     return DeliveryQuote(
@@ -57,6 +61,8 @@ class DeliveryQuote extends Equatable {
       grandTotalPaise: (json['grandTotalPaise'] as num?)?.toInt() ?? 0,
       meetsMinOrder: json['meetsMinOrder'] as bool? ?? true,
       amountToMinOrderPaise: (json['amountToMinOrderPaise'] as num?)?.toInt() ?? 0,
+      isLocalShop: json['isLocalShop'] as bool? ?? false,
+      codAllowed: json['codAllowed'] as bool? ?? true,
     );
   }
 
@@ -67,6 +73,8 @@ class DeliveryQuote extends Equatable {
         deliveryFeePaise,
         itemTotalPaise,
         freeDeliveryApplied,
+        isLocalShop,
+        codAllowed,
       ];
 }
 

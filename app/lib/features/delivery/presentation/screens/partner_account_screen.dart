@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/network/api_client.dart';
+import '../../../../core/push/push_notifications.dart';
 import '../../../../core/i18n/i18n_providers.dart';
 import '../../../../core/routing/auth_gate.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -70,6 +72,7 @@ class PartnerAccountScreen extends ConsumerWidget {
               label: ref.t('common.log_out'),
               variant: AppButtonVariant.outline,
               onPressed: () async {
+                await ref.read(pushNotificationsProvider).unregister(ref.read(dioProvider));
                 await ref.read(authRepositoryProvider).logout();
                 ref.read(isAuthenticatedProvider.notifier).state = false;
                 ref.read(appRoleProvider.notifier).state = AppRole.customer;

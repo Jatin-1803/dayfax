@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
-import type { Pool, RowDataPacket } from 'mysql2/promise';
+import type { Pool, PoolConnection, RowDataPacket } from 'mysql2/promise';
+import { REFRESH_REUSE_GRACE_SECONDS, sqlFlag } from '../../common/auth/token-session.js';
 import { getPool } from '../../common/database/pool.js';
 import { createId } from '../../common/utils/id.js';
 
@@ -54,32 +55,48 @@ export class AdminAuthRepository {
   async storeRefreshToken(
     adminUserId: string,
     token: string,
-    expiresAt: Date,
+    expiresInSeconds: number,
+    conn?: Pool | PoolConnection,
+    sessionId?: string,
   ): Promise<void> {
-    await this.db.execute(
-      `INSERT INTO admin_refresh_tokens (id, admin_user_id, token_hash, expires_at)
-       VALUES (?, ?, ?, ?)`,
-      [createId(), adminUserId, hashValue(token), expiresAt],
+    const db = conn ?? this.db;
+    await db.execute(
+      `INSERT INTO admin_refresh_tokens (id, admin_user_id, session_id, token_hash, expires_at)
+       VALUES (?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL ? SECOND))`,
+      [createId(), adminUserId, sessionId ?? null, hashValue(token), expiresInSeconds],
     );
   }
 
-  async findValidRefreshToken(
+  async findRefreshTokenForUpdate(
     token: string,
-  ): Promise<(RowDataPacket & { id: string; admin_user_id: string }) | null> {
-    const [rows] = await this.db.query<RowDataPacket[]>(
-      `SELECT id, admin_user_id
+    conn: Pool | PoolConnection,
+  ): Promise<{ id: string; admin_user_id: string; sessionId: string | null; active: boolean; withinGrace: boolean } | null> {
+    const [rows] = await conn.query<RowDataPacket[]>(
+      `SELECT id, admin_user_id, session_id,
+              (revoked_at IS NULL AND expires_at > NOW()) AS active,
+              (revoked_at IS NOT NULL
+                AND revoked_at >= DATE_SUB(NOW(), INTERVAL ? SECOND)
+                AND expires_at > NOW()) AS within_grace
        FROM admin_refresh_tokens
        WHERE token_hash = ?
-         AND revoked_at IS NULL
-         AND expires_at > CURRENT_TIMESTAMP
-       LIMIT 1`,
-      [hashValue(token)],
+       LIMIT 1
+       FOR UPDATE`,
+      [REFRESH_REUSE_GRACE_SECONDS, hashValue(token)],
     );
-    return (rows[0] as typeof rows[0] & { id: string; admin_user_id: string }) ?? null;
+    const row = rows[0];
+    if (!row) return null;
+    return {
+      id: row.id as string,
+      admin_user_id: row.admin_user_id as string,
+      sessionId: (row.session_id as string | null) ?? null,
+      active: sqlFlag(row.active),
+      withinGrace: sqlFlag(row.within_grace),
+    };
   }
 
-  async revokeRefreshToken(id: string): Promise<void> {
-    await this.db.execute(
+  async revokeRefreshToken(id: string, conn?: Pool | PoolConnection): Promise<void> {
+    const db = conn ?? this.db;
+    await db.execute(
       `UPDATE admin_refresh_tokens SET revoked_at = CURRENT_TIMESTAMP WHERE id = ?`,
       [id],
     );

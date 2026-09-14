@@ -14,24 +14,52 @@ import '../../domain/order_models.dart';
 import '../orders_view_models.dart';
 import 'track_order_screen.dart';
 
-class OrdersScreen extends ConsumerWidget {
+class OrdersScreen extends ConsumerStatefulWidget {
   const OrdersScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<OrdersScreen> createState() => _OrdersScreenState();
+}
+
+class _OrdersScreenState extends ConsumerState<OrdersScreen> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _refresh());
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refresh();
+    }
+  }
+
+  void _refresh() {
+    ref.read(ordersListViewModelProvider.notifier).load(reset: true, silent: true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(ordersListViewModelProvider);
     final notifier = ref.read(ordersListViewModelProvider.notifier);
     final dateFormat = DateFormat('dd MMM, hh:mm a');
 
     return Scaffold(
       appBar: AppBar(title: Text(ref.t('orders.title'))),
-      body: _buildBody(context, ref, state, notifier, dateFormat),
+      body: _buildBody(context, state, notifier, dateFormat),
     );
   }
 
   Widget _buildBody(
     BuildContext context,
-    WidgetRef ref,
     OrdersListState state,
     OrdersListViewModel notifier,
     DateFormat dateFormat,
@@ -70,8 +98,9 @@ class OrdersScreen extends ConsumerWidget {
       },
       child: RefreshIndicator(
         color: CustomerColors.primary,
-        onRefresh: () => notifier.load(reset: true),
+        onRefresh: () => notifier.load(reset: true, silent: true),
         child: ListView.separated(
+          physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(CustomerSpacing.marginMobile),
           itemCount: state.items.length + (state.isLoadingMore ? 1 : 0),
           separatorBuilder: (_, _) => const SizedBox(height: CustomerSpacing.md),
@@ -130,13 +159,27 @@ class _OrderTile extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        order.orderNumber,
+                        order.linkedOrders.isEmpty
+                            ? order.orderNumber
+                            : '${order.orderNumber} · ${order.linkedOrders.first.orderNumber}',
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
                               fontWeight: FontWeight.w800,
                             ),
                       ),
                     ),
-                    StatusChip(status: order.status),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        StatusChip(status: order.status),
+                        if (order.returnRequest != null) ...[
+                          const SizedBox(height: CustomerSpacing.xs),
+                          StatusChip(
+                            status: order.returnRequest!.status,
+                            label: context.t(order.returnStatusChipKey!),
+                          ),
+                        ],
+                      ],
+                    ),
                   ],
                 ),
                 const SizedBox(height: CustomerSpacing.xs),

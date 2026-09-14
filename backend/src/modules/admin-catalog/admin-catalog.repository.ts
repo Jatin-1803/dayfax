@@ -80,7 +80,7 @@ export class AdminCatalogRepository {
     const [rows] = await this.db.query<RowDataPacket[]>(
       `SELECT p.id, p.category_id, p.name, p.name_hi, p.slug, p.description, p.description_hi,
               p.brand, p.sub_category, p.sub_category_hi, p.image_url, p.is_active,
-              pv.id AS variant_id, pv.unit_label, pv.price_paise, pv.mrp_paise,
+              pv.id AS variant_id, pv.unit_label, pv.price_paise, pv.mrp_paise, pv.cost_price_paise,
               sp.store_id, sp.is_available,
               COALESCE(inv.quantity_available, 0) AS quantity_available
        FROM products p

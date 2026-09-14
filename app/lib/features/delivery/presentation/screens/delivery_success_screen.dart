@@ -50,13 +50,16 @@ class DeliverySuccessScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: DeliverySpacing.lg),
                 Text(
-                  ref.t('delivery.delivered_title'),
+                  ref.t(job.successTitleKey),
                   style: Theme.of(context).textTheme.headlineMedium,
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: DeliverySpacing.sm),
                 Text(
-                  ref.t('delivery.delivered_message', {'orderNumber': job.orderNumber}),
+                  ref.t(
+                    job.successMessageKey,
+                    {'orderNumber': job.orderNumber},
+                  ),
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         color: DeliveryColors.onSurfaceVariant,
                       ),
@@ -75,11 +78,22 @@ class DeliverySuccessScreen extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        job.orderNumber,
+                        job.isReturnPickup
+                            ? ref.t(job.listTitleKey, {'orderNumber': job.orderNumber})
+                            : job.orderNumber,
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.w700,
                             ),
                       ),
+                      if (job.isReturnPickup && job.collectItems.isNotEmpty) ...[
+                        const SizedBox(height: DeliverySpacing.sm),
+                        for (final item in job.collectItems)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: DeliverySpacing.xs),
+                            child: Text(item.displayLine),
+                          ),
+                      ],
+                      if (!job.isReturnPickup) ...[
                       const SizedBox(height: DeliverySpacing.sm),
                       Row(
                         children: [
@@ -92,6 +106,11 @@ class DeliverySuccessScreen extends ConsumerWidget {
                           Expanded(child: Text(job.store.name)),
                         ],
                       ),
+                      ],
+                      if (job.isReturnPickup && job.customerName != null) ...[
+                        const SizedBox(height: DeliverySpacing.sm),
+                        Text(job.customerName!),
+                      ],
                       const SizedBox(height: DeliverySpacing.sm),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,

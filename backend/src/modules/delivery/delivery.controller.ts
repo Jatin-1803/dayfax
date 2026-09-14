@@ -2,7 +2,7 @@ import type { NextFunction, Request, Response } from 'express';
 import { sendSuccess } from '../../common/utils/api-response.js';
 import { CodPaymentService } from '../payments/cod-payment.service.js';
 import { DeliveryService } from './delivery.service.js';
-import type { ListJobsQuery, UpdateAssignmentStatusInput } from './delivery.schema.js';
+import type { ListJobsQuery, StatsQuery, UpdateAssignmentStatusInput } from './delivery.schema.js';
 
 export class DeliveryController {
   constructor(
@@ -12,7 +12,7 @@ export class DeliveryController {
 
   stats = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const data = await this.service.getStats(req.user!.id);
+      const data = await this.service.getStats(req.user!.id, req.query as unknown as StatsQuery);
       sendSuccess(res, data, 'Delivery stats fetched');
     } catch (error) {
       next(error);
@@ -57,6 +57,18 @@ export class DeliveryController {
         accepted.assignmentId,
       );
       sendSuccess(res, data, 'Delivery job claimed', accepted.created ? 201 : 200);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  acceptReturn = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const data = await this.service.acceptReturn(
+        req.user!.id,
+        req.params.returnRequestId as string,
+      );
+      sendSuccess(res, data, 'Return pickup accepted', 201);
     } catch (error) {
       next(error);
     }

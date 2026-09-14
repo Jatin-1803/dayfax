@@ -22,14 +22,11 @@ import '../../../addresses/domain/address_models.dart';
 import '../../../addresses/presentation/addresses_view_model.dart';
 import '../../../addresses/presentation/widgets/address_form_sheet.dart';
 import '../../../cart/presentation/widgets/cart_aware_product_card.dart';
-import '../../../catalog/domain/catalog_models.dart';
 import '../../../catalog/presentation/catalog_view_models.dart';
 import '../../../catalog/presentation/widgets/category_icon.dart';
 import '../../../catalog/presentation/widgets/category_tile.dart';
 import '../../../notifications/presentation/notifications_view_model.dart';
 import '../../../orders/domain/delivery_quote.dart';
-import '../../../orders/domain/order_models.dart';
-import '../../../orders/presentation/orders_view_models.dart';
 import '../../../shops/domain/shop_models.dart';
 import '../../../shops/presentation/shops_view_models.dart';
 
@@ -41,7 +38,6 @@ class HomeScreen extends ConsumerWidget {
     final catalogState = ref.watch(homeCatalogViewModelProvider);
     final addressesAsync = ref.watch(addressesViewModelProvider);
     final quoteAsync = ref.watch(deliveryQuoteProvider(null));
-    final recentOrders = ref.watch(ordersListViewModelProvider);
     final selected = addressesAsync.maybeWhen(
       data: (addresses) {
         if (addresses.isEmpty) return null;
@@ -138,109 +134,152 @@ class HomeScreen extends ConsumerWidget {
             ),
           CatalogError(:final message) => ErrorState(
               message: message,
-              onRetry: () => ref.read(homeCatalogViewModelProvider.notifier).load(),
+              onRetry: () =>
+                  ref.read(homeCatalogViewModelProvider.notifier).load(reset: true),
             ),
           CatalogReady(
             :final categories,
-            :final popular,
-            :final grocery,
-            :final vegetables,
-            :final cosmetics,
+            :final products,
+            :final isLoadingMore,
+            :final hasMore,
           ) =>
-            RefreshIndicator(
-              color: CustomerColors.primary,
-              onRefresh: () async {
-                await Future.wait([
-                  ref.read(homeCatalogViewModelProvider.notifier).load(),
-                  ref.read(homeBannersViewModelProvider.notifier).load(),
-                  ref.read(popularShopsViewModelProvider.notifier).load(),
-                  ref.read(addressesViewModelProvider.notifier).load(),
-                  ref.refresh(deliveryQuoteProvider(null).future),
-                  ref.read(ordersListViewModelProvider.notifier).load(reset: true),
-                ]);
+            NotificationListener<ScrollNotification>(
+              onNotification: (notification) {
+                if (notification.metrics.pixels >=
+                        notification.metrics.maxScrollExtent - 200 &&
+                    hasMore &&
+                    !isLoadingMore) {
+                  ref.read(homeCatalogViewModelProvider.notifier).load();
+                }
+                return false;
               },
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(
-                  CustomerSpacing.marginMobile,
-                  CustomerSpacing.lg,
-                  CustomerSpacing.marginMobile,
-                  100,
-                ),
-                children: [
-                  AppSearchBar(
-                    readOnly: true,
-                    onTap: () => context.push('/search'),
-                  ),
-                  if (etaMinutes != null && etaMinutes > 0) ...[
-                    const SizedBox(height: CustomerSpacing.md),
-                    EtaBanner(etaMinutes: etaMinutes),
-                  ],
-                  const HomeTopBanner(),
-                  const SizedBox(height: CustomerSpacing.lg),
-                  if (categories.isNotEmpty) ...[
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            ref.t('home.shop_by_category'),
-                            style: Theme.of(context).textTheme.headlineSmall,
+              child: RefreshIndicator(
+                color: CustomerColors.primary,
+                onRefresh: () async {
+                  await Future.wait([
+                    ref.read(homeCatalogViewModelProvider.notifier).load(reset: true),
+                    ref.read(homeBannersViewModelProvider.notifier).load(),
+                    ref.read(popularShopsViewModelProvider.notifier).load(),
+                    ref.read(addressesViewModelProvider.notifier).load(),
+                    ref.refresh(deliveryQuoteProvider(null).future),
+                  ]);
+                },
+                child: CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: [
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(
+                        CustomerSpacing.marginMobile,
+                        CustomerSpacing.lg,
+                        CustomerSpacing.marginMobile,
+                        0,
+                      ),
+                      sliver: SliverList(
+                        delegate: SliverChildListDelegate([
+                          AppSearchBar(
+                            readOnly: true,
+                            onTap: () => context.push('/search'),
+                          ),
+                          if (etaMinutes != null && etaMinutes > 0) ...[
+                            const SizedBox(height: CustomerSpacing.md),
+                            EtaBanner(etaMinutes: etaMinutes),
+                          ],
+                          const HomeTopBanner(),
+                          const SizedBox(height: CustomerSpacing.lg),
+                          if (categories.isNotEmpty) ...[
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    ref.t('home.shop_by_category'),
+                                    style: Theme.of(context).textTheme.headlineSmall,
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: () => context.go('/categories'),
+                                  child: Text(context.t('common.see_all')),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: CustomerSpacing.sm),
+                            GridView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: categories.length.clamp(0, 8),
+                              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 4,
+                                mainAxisSpacing: CustomerSpacing.sm,
+                                crossAxisSpacing: CustomerSpacing.sm,
+                                childAspectRatio: 0.78 /
+                                    MediaQuery.textScalerOf(context)
+                                        .scale(1)
+                                        .clamp(1.0, 1.35),
+                              ),
+                              itemBuilder: (context, index) {
+                                final category = categories[index];
+                                return CategoryTile(
+                                  label: category.name,
+                                  iconKey: category.iconKey,
+                                  imageUrl: category.imageUrl,
+                                  color: chipColorForIndex(index),
+                                  compact: true,
+                                  onTap: () =>
+                                      context.push('/category/${category.slug}'),
+                                );
+                              },
+                            ),
+                          ],
+                          const _PopularShopsRail(),
+                          if (products.isNotEmpty) ...[
+                            const SizedBox(height: CustomerSpacing.lg),
+                            Text(
+                              ref.t('home.products'),
+                              style: Theme.of(context).textTheme.headlineSmall,
+                            ),
+                            const SizedBox(height: CustomerSpacing.sm),
+                          ],
+                        ]),
+                      ),
+                    ),
+                    if (products.isEmpty)
+                      SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: EmptyState(
+                          title: ref.t('catalog.no_products'),
+                          message: ref.t('catalog.no_products_message'),
+                        ),
+                      )
+                    else
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(
+                          CustomerSpacing.marginMobile,
+                          0,
+                          CustomerSpacing.marginMobile,
+                          100,
+                        ),
+                        sliver: SliverGrid(
+                          gridDelegate: homeSizedProductGridDelegate(context),
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) {
+                              if (index >= products.length) {
+                                return const Center(
+                                  child: Padding(
+                                    padding: EdgeInsets.all(CustomerSpacing.md),
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                );
+                              }
+                              return Align(
+                                alignment: Alignment.topCenter,
+                                child: CartAwareProductCard(product: products[index]),
+                              );
+                            },
+                            childCount: products.length + (isLoadingMore ? 1 : 0),
                           ),
                         ),
-                        TextButton(
-                          onPressed: () => context.go('/categories'),
-                          child: Text(context.t('common.see_all')),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: CustomerSpacing.sm),
-                    GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: categories.length.clamp(0, 8),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 4,
-                        mainAxisSpacing: CustomerSpacing.sm,
-                        crossAxisSpacing: CustomerSpacing.sm,
-                        childAspectRatio: 0.78 /
-                            MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 1.35),
                       ),
-                      itemBuilder: (context, index) {
-                        final category = categories[index];
-                        return CategoryTile(
-                          label: category.name,
-                          iconKey: category.iconKey,
-                          imageUrl: category.imageUrl,
-                          color: chipColorForIndex(index),
-                          compact: true,
-                          onTap: () => context.push('/category/${category.slug}'),
-                        );
-                      },
-                    ),
                   ],
-                  const _PopularShopsRail(),
-                  if (recentOrders.items.isNotEmpty)
-                    _ReorderRail(orders: recentOrders.items.take(5).toList()),
-                  _ProductRail(
-                    title: ref.t('home.popular_near_you'),
-                    products: popular,
-                    onSeeAll: () => context.go('/categories'),
-                  ),
-                  _ProductRail(
-                    title: ref.t('home.rail_grocery'),
-                    products: grocery,
-                    onSeeAll: () => context.push('/category/grocery'),
-                  ),
-                  _ProductRail(
-                    title: ref.t('home.rail_vegetables'),
-                    products: vegetables,
-                    onSeeAll: () => context.push('/category/vegetables'),
-                  ),
-                  _ProductRail(
-                    title: ref.t('home.rail_cosmetics'),
-                    products: cosmetics,
-                    onSeeAll: () => context.push('/category/cosmetics'),
-                  ),
-                ],
+                ),
               ),
             ),
         },
@@ -261,10 +300,16 @@ class _HomeSkeleton extends StatelessWidget {
         const SizedBox(height: CustomerSpacing.lg),
         const SkeletonBox(height: 56, borderRadius: 16),
         const SizedBox(height: CustomerSpacing.lg),
-        ProductCardRail(
-          itemCount: 4,
-          padding: EdgeInsets.zero,
-          itemBuilder: (_, _) => const ProductCardSkeleton(),
+        Expanded(
+          child: GridView.builder(
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: homeSizedProductGridDelegate(context),
+            itemCount: 6,
+            itemBuilder: (_, _) => const Align(
+              alignment: Alignment.topCenter,
+              child: ProductCardSkeleton(),
+            ),
+          ),
         ),
       ],
     );
@@ -372,76 +417,6 @@ class _ShopAvatarTile extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _ReorderRail extends StatelessWidget {
-  const _ReorderRail({required this.orders});
-
-  final List<CustomerOrder> orders;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: CustomerSpacing.lg),
-        Row(
-          children: [
-            Expanded(
-              child: Text(context.t('home.order_again'), style: Theme.of(context).textTheme.headlineSmall),
-            ),
-            TextButton(
-              onPressed: () => context.go('/orders'),
-              child: Text(context.t('common.see_all')),
-            ),
-          ],
-        ),
-        const SizedBox(height: CustomerSpacing.sm),
-        SizedBox(
-          height: 88,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: orders.length,
-            separatorBuilder: (_, _) => const SizedBox(width: CustomerSpacing.md),
-            itemBuilder: (context, index) {
-              final order = orders[index];
-              return Material(
-                color: CustomerColors.surfaceContainerLowest,
-                borderRadius: BorderRadius.circular(CustomerRadius.md),
-                child: InkWell(
-                  onTap: () => context.push('/orders/${order.id}'),
-                  borderRadius: BorderRadius.circular(CustomerRadius.md),
-                  child: Container(
-                    width: 200,
-                    padding: const EdgeInsets.all(CustomerSpacing.md),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          order.orderNumber,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.labelLarge,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          order.status,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: CustomerColors.onSurfaceVariant,
-                              ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      ],
     );
   }
 }
@@ -701,49 +676,3 @@ Future<void> _useCurrentLocationFlow(BuildContext context, WidgetRef ref) async 
     );
   }
 }
-
-class _ProductRail extends StatelessWidget {
-  const _ProductRail({
-    required this.title,
-    required this.products,
-    required this.onSeeAll,
-  });
-
-  final String title;
-  final List<CatalogProduct> products;
-  final VoidCallback onSeeAll;
-
-  @override
-  Widget build(BuildContext context) {
-    if (products.isEmpty) return const SizedBox.shrink();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: CustomerSpacing.md),
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                title,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-              ),
-            ),
-            TextButton(onPressed: onSeeAll, child: Text(context.t('common.see_all'))),
-          ],
-        ),
-        const SizedBox(height: CustomerSpacing.sm),
-        ProductCardRail(
-          itemCount: products.length,
-          padding: EdgeInsets.zero,
-          itemBuilder: (context, index) {
-            return CartAwareProductCard(product: products[index]);
-          },
-        ),
-      ],
-    );
-  }
-}
-

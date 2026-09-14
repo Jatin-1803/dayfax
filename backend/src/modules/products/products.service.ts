@@ -13,7 +13,7 @@ import type {
   SimilarProductsQuery,
 } from './products.schema.js';
 
-function mapListItem(row: ProductListRow, lang: AppLang) {
+export function mapProductListItem(row: ProductListRow, lang: AppLang) {
   const pricePaise = row.price_paise ?? 0;
   const mrpPaise = row.mrp_paise ?? pricePaise;
   const discountPercent =
@@ -183,7 +183,7 @@ export class ProductsService {
     }
 
     return {
-      items: rows.map((row) => mapListItem(row, query.lang)),
+      items: rows.map((row) => mapProductListItem(row, query.lang)),
       pagination: paginatedMeta(total, page, limit),
       searchMeta:
         query.q && normalizedQ
@@ -285,7 +285,7 @@ export class ProductsService {
         : [];
 
     return {
-      items: [...overrides, ...auto].map((row) => mapListItem(row, query.lang)),
+      items: [...overrides, ...auto].map((row) => mapProductListItem(row, query.lang)),
       source: {
         hasManualOverrides: overrides.length > 0,
       },

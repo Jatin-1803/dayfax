@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from 'express';
+import { readClientContext } from '../../common/http/client-context.js';
 import { sendSuccess } from '../../common/utils/api-response.js';
 import { AdminAuthService } from './admin-auth.service.js';
 import type { AdminLoginInput, AdminRefreshInput } from './admin-auth.schema.js';
@@ -8,7 +9,7 @@ export class AdminAuthController {
 
   login = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const data = await this.service.login(req.body as AdminLoginInput);
+      const data = await this.service.login(req.body as AdminLoginInput, readClientContext(req));
       sendSuccess(res, data, 'Admin signed in');
     } catch (error) {
       next(error);
@@ -18,7 +19,7 @@ export class AdminAuthController {
   refresh = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const body = req.body as AdminRefreshInput;
-      const data = await this.service.refresh(body.refreshToken);
+      const data = await this.service.refresh(body.refreshToken, readClientContext(req));
       sendSuccess(res, data, 'Token refreshed');
     } catch (error) {
       next(error);

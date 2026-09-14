@@ -26,6 +26,7 @@ const emptyStore = {
   latitude: '',
   longitude: '',
   isPopular: true,
+  onlinePaymentOnly: true,
   isActive: true,
   description: '',
   imageUrl: null as string | null,
@@ -40,6 +41,7 @@ type ProductForm = {
   unitLabel: string;
   priceRupees: string;
   mrpRupees: string;
+  costPriceRupees: string;
   quantityAvailable: string;
   categoryId: string;
   imageUrl: string | null;
@@ -55,6 +57,7 @@ const emptyProductForm = (): ProductForm => ({
   unitLabel: '1 pc',
   priceRupees: '',
   mrpRupees: '',
+  costPriceRupees: '',
   quantityAvailable: '100',
   categoryId: '',
   imageUrl: null,
@@ -107,6 +110,7 @@ export function StoresPage() {
           description: form.description || null,
           imageUrl: form.imageUrl,
           isPopular: form.isPopular,
+          onlinePaymentOnly: form.onlinePaymentOnly,
           isActive: form.isActive,
         }),
       });
@@ -166,7 +170,8 @@ export function StoresPage() {
                     ) : (
                       <span className="badge badge-muted">Inactive</span>
                     )}{' '}
-                    {s.isPopular ? <span className="badge">Popular</span> : null}
+                    {s.isPopular ? <span className="badge">Popular</span> : null}{' '}
+                    {s.onlinePaymentOnly ? <span className="badge">Online only</span> : null}
                   </td>
                   <td>
                     <Link className="btn btn-secondary btn-sm" to={`/stores/${s.id}`}>
@@ -261,6 +266,14 @@ export function StoresPage() {
               <label>
                 <input
                   type="checkbox"
+                  checked={form.onlinePaymentOnly}
+                  onChange={(e) => setForm({ ...form, onlinePaymentOnly: e.target.checked })}
+                />{' '}
+                Online payment only (no COD)
+              </label>
+              <label>
+                <input
+                  type="checkbox"
                   checked={form.isActive}
                   onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
                 />{' '}
@@ -336,6 +349,7 @@ export function StoreDetailPage() {
       latitude: store.latitude != null ? String(store.latitude) : '',
       longitude: store.longitude != null ? String(store.longitude) : '',
       isPopular: store.isPopular,
+      onlinePaymentOnly: store.onlinePaymentOnly,
       isActive: store.isActive,
       description: store.description || '',
       imageUrl: store.imageUrl,
@@ -364,6 +378,7 @@ export function StoreDetailPage() {
           description: storeForm.description || null,
           imageUrl: storeForm.imageUrl,
           isPopular: storeForm.isPopular,
+          onlinePaymentOnly: storeForm.onlinePaymentOnly,
           isActive: storeForm.isActive,
         }),
       });
@@ -396,6 +411,8 @@ export function StoreDetailPage() {
       unitLabel: p.unitLabel || '1 pc',
       priceRupees: paiseToRupees(p.pricePaise),
       mrpRupees: paiseToRupees(p.mrpPaise ?? p.pricePaise),
+      costPriceRupees:
+        p.costPricePaise == null ? '' : paiseToRupees(p.costPricePaise),
       quantityAvailable: String(p.quantityAvailable),
       categoryId: p.categoryId || categories[0]?.id || '',
       imageUrl: p.imageUrl,
@@ -413,6 +430,12 @@ export function StoreDetailPage() {
       const mrpPaise = productForm.mrpRupees
         ? rupeesToPaise(productForm.mrpRupees)
         : pricePaise;
+      const costPricePaise = rupeesToPaise(productForm.costPriceRupees);
+      if (!Number.isFinite(costPricePaise) || costPricePaise < 0) {
+        toast.push('Enter a valid cost price (CP ≥ 0)', 'error');
+        setSaving(false);
+        return;
+      }
       if (editProduct) {
         await apiRequest(`/admin/stores/${id}/products/${editProduct.id}`, {
           method: 'PATCH',
@@ -425,6 +448,7 @@ export function StoreDetailPage() {
             unitLabel: productForm.unitLabel,
             pricePaise,
             mrpPaise,
+            costPricePaise,
             quantityAvailable: Number(productForm.quantityAvailable) || 0,
             imageUrl: productForm.imageUrl,
             isAvailable: productForm.isAvailable,
@@ -445,6 +469,7 @@ export function StoreDetailPage() {
             unitLabel: productForm.unitLabel,
             pricePaise,
             mrpPaise,
+            costPricePaise,
             quantityAvailable: Number(productForm.quantityAvailable) || 100,
             imageUrl: productForm.imageUrl,
             isAvailable: productForm.isAvailable,
@@ -476,6 +501,7 @@ export function StoreDetailPage() {
           <h1>{store.name}</h1>
           <p>
             {store.storeType} · {store.city || 'No city'} · {store.slug}
+            {store.onlinePaymentOnly ? ' · Online payment only' : ''}
           </p>
         </div>
         <div className="row-actions">
@@ -522,6 +548,7 @@ export function StoreDetailPage() {
                 <th>Product</th>
                 <th>SP</th>
                 <th>MRP</th>
+                <th>CP</th>
                 <th>Stock</th>
                 <th>Available</th>
                 <th />
@@ -549,6 +576,13 @@ export function StoreDetailPage() {
                   </td>
                   <td>{formatPaise(p.pricePaise)}</td>
                   <td>{formatPaise(p.mrpPaise ?? p.pricePaise)}</td>
+                  <td>
+                    {p.costPricePaise == null ? (
+                      <span className="badge badge-warn">Set CP</span>
+                    ) : (
+                      formatPaise(p.costPricePaise)
+                    )}
+                  </td>
                   <td>{p.quantityAvailable}</td>
                   <td>
                     {p.isAvailable ? (
@@ -690,6 +724,16 @@ export function StoreDetailPage() {
               <label>
                 <input
                   type="checkbox"
+                  checked={storeForm.onlinePaymentOnly}
+                  onChange={(e) =>
+                    setStoreForm({ ...storeForm, onlinePaymentOnly: e.target.checked })
+                  }
+                />{' '}
+                Online payment only (no COD)
+              </label>
+              <label>
+                <input
+                  type="checkbox"
                   checked={storeForm.isActive}
                   onChange={(e) => setStoreForm({ ...storeForm, isActive: e.target.checked })}
                 />{' '}
@@ -765,6 +809,39 @@ export function StoreDetailPage() {
                   valueRupees={productForm.mrpRupees}
                   onChange={(mrpRupees) => setProductForm({ ...productForm, mrpRupees })}
                 />
+                <MoneyInput
+                  label="Cost price (CP)"
+                  required
+                  min="0"
+                  valueRupees={productForm.costPriceRupees}
+                  onChange={(costPriceRupees) =>
+                    setProductForm({ ...productForm, costPriceRupees })
+                  }
+                  hint="Actual cost paid by the business for this product."
+                />
+                {(() => {
+                  const sp = Number(productForm.priceRupees);
+                  const cp = Number(productForm.costPriceRupees);
+                  if (
+                    !Number.isFinite(sp) ||
+                    !Number.isFinite(cp) ||
+                    productForm.costPriceRupees === '' ||
+                    productForm.priceRupees === ''
+                  ) {
+                    return null;
+                  }
+                  const profit = sp - cp;
+                  const loss = profit < 0;
+                  return (
+                    <div className={`ba-profit-preview${loss ? ' is-loss' : ''}`}>
+                      <span>Expected gross profit (preview)</span>
+                      <strong>
+                        {loss ? '−' : ''}₹{Math.abs(profit).toFixed(2)}
+                        {loss ? ' loss' : ''}
+                      </strong>
+                    </div>
+                  );
+                })()}
                 <div className="field">
                   <label>Stock qty</label>
                   <input

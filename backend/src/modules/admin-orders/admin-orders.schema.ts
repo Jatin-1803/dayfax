@@ -23,6 +23,8 @@ export const adminOrderIdParamsSchema = z.object({
   idOrNumber: z.string().trim().min(1).max(64),
 });
 
+export const COD_COLLECTION_METHODS = ['CASH', 'UPI', 'CARD'] as const;
+
 export const adminPatchOrderStatusSchema = z.object({
   status: z.enum([
     'PENDING',
@@ -35,6 +37,15 @@ export const adminPatchOrderStatusSchema = z.object({
     'CANCELLED',
   ]),
   note: z.string().trim().max(500).optional(),
+  paymentReceived: z.enum(COD_COLLECTION_METHODS).optional(),
+}).superRefine((value, ctx) => {
+  if (value.status === 'CANCELLED' && (!value.note || value.note.length < 3)) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['note'],
+      message: 'A reason is required to cancel an order',
+    });
+  }
 });
 
 export const adminAssignOrderSchema = z.object({

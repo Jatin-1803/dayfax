@@ -14,13 +14,16 @@ import '../../../../core/theme/customer/customer_spacing.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/bill_summary.dart';
 import '../../../../shared/widgets/eta_banner.dart';
+import '../../../../shared/widgets/local_shop_note.dart';
 import '../../../../shared/widgets/price_text.dart';
 import '../../../../shared/widgets/state_widgets.dart';
 import '../../../addresses/data/location_service.dart';
 import '../../../addresses/domain/address_models.dart';
 import '../../../addresses/presentation/widgets/address_form_sheet.dart';
+import '../../../cart/domain/cart_models.dart';
 import '../../../cart/presentation/cart_view_model.dart';
 import '../../../notifications/presentation/notifications_view_model.dart';
+import '../../data/orders_repository.dart';
 import '../../domain/delivery_quote.dart';
 import '../orders_view_models.dart';
 
@@ -34,6 +37,7 @@ class CheckoutScreen extends ConsumerStatefulWidget {
 class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   late final Razorpay _razorpay;
   String? _pendingOrderId;
+  var _razorpayOpen = false;
   static final _inr = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
 
   @override
@@ -53,6 +57,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   void _onPaymentSuccess(PaymentSuccessResponse response) async {
     final orderId = _pendingOrderId;
+    _pendingOrderId = null;
+    if (mounted) setState(() => _razorpayOpen = false);
     final razorpayOrderId = response.orderId;
     final paymentId = response.paymentId;
     final signature = response.signature;
@@ -75,16 +81,40 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         );
     ref.invalidate(notificationsUnreadCountProvider);
     if (!mounted || order == null) return;
+    FocusManager.instance.primaryFocus?.unfocus();
     context.go('/orders/${order.id}/confirmed');
   }
 
-  void _onPaymentError(PaymentFailureResponse response) {
+  Future<void> _onPaymentError(PaymentFailureResponse _) async {
+    await _abandonOpenCheckout();
+  }
+
+  Future<void> _abandonOpenCheckout() async {
+    final orderId = _pendingOrderId;
+    _pendingOrderId = null;
+    if (mounted) setState(() => _razorpayOpen = false);
+
+    if (orderId != null) {
+      try {
+        await ref.read(ordersRepositoryProvider).abandonPayment(orderId);
+        await ref.read(cartViewModelProvider.notifier).load();
+        ref.invalidate(ordersListViewModelProvider);
+        ref.invalidate(notificationsUnreadCountProvider);
+      } catch (_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(ref.tr('checkout.payment_failed')),
+            backgroundColor: CustomerColors.error,
+          ),
+        );
+        return;
+      }
+    }
+
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(response.message ?? ref.tr('checkout.payment_failed')),
-        backgroundColor: CustomerColors.error,
-      ),
+      SnackBar(content: Text(ref.tr('checkout.payment_cancelled'))),
     );
   }
 
@@ -96,6 +126,18 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   }
 
   Future<void> _placeOrder() async {
+    if (_razorpayOpen) return;
+    final cart = ref.read(cartViewModelProvider).cart;
+    final checkout = ref.read(checkoutViewModelProvider);
+    if (cart.hasOnlineRequiredItems &&
+        !cart.requiresOnlineOnly &&
+        checkout.paymentMethod == 'COD') {
+      final choice = await _openMixedCodSheet(cart);
+      if (choice == null || !mounted) return;
+      if (choice == _MixedPayChoice.payFull) {
+        ref.read(checkoutViewModelProvider.notifier).selectPaymentMethod('UPI');
+      }
+    }
     final result = await ref.read(checkoutViewModelProvider.notifier).placeOrder();
     if (!mounted || result == null) return;
 
@@ -103,20 +145,114 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
     final razorpay = result.razorpay;
     if (razorpay == null) {
+      FocusManager.instance.primaryFocus?.unfocus();
+      if (!mounted) return;
       context.go('/orders/${result.order.id}/confirmed');
       return;
     }
 
     _pendingOrderId = result.order.id;
-    _razorpay.open({
-      'key': razorpay.keyId,
-      'amount': razorpay.amountPaise,
-      'currency': razorpay.currency,
-      'name': razorpay.name,
-      'description': razorpay.description,
-      'order_id': razorpay.orderId,
-      'theme': {'color': '#006C49'},
-    });
+    setState(() => _razorpayOpen = true);
+    try {
+      _razorpay.open(razorpay.toOpenOptions());
+    } catch (_) {
+      await _abandonOpenCheckout();
+    }
+  }
+
+  Future<_MixedPayChoice?> _openMixedCodSheet(Cart cart) async {
+    final quote = ref.read(deliveryQuoteProvider(ref.read(checkoutViewModelProvider).selectedAddressId)).asData?.value;
+    final onlineItems = cart.items.where((item) => item.requiresOnlinePayment).toList();
+    final codItems = cart.items.where((item) => !item.requiresOnlinePayment).toList();
+    final onlinePayPaise =
+        onlineItems.fold<int>(0, (sum, item) => sum + item.lineTotalPaise);
+    final codPayPaise = codItems.fold<int>(0, (sum, item) => sum + item.lineTotalPaise);
+    final deliveryFeePaise = quote?.deliveryFeePaise ?? 0;
+    final grandPaise = quote?.grandTotalPaise ?? cart.subtotalPaise;
+
+    return showModalBottomSheet<_MixedPayChoice>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              CustomerSpacing.marginMobile,
+              0,
+              CustomerSpacing.marginMobile,
+              CustomerSpacing.lg,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    sheetContext.t('checkout.mixed_sheet_title'),
+                    style: Theme.of(sheetContext).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: CustomerSpacing.sm),
+                  Text(
+                    sheetContext.t('checkout.mixed_sheet_body'),
+                    style: Theme.of(sheetContext).textTheme.bodyMedium?.copyWith(
+                          color: CustomerColors.onSurfaceVariant,
+                        ),
+                  ),
+                  const SizedBox(height: CustomerSpacing.lg),
+                  _MixedSheetBlock(
+                    title: sheetContext.t('checkout.mixed_local_title'),
+                    note: sheetContext.t('checkout.mixed_local_note'),
+                    items: onlineItems,
+                    subtotalPaise: onlinePayPaise,
+                    accent: true,
+                  ),
+                  const SizedBox(height: CustomerSpacing.md),
+                  _MixedSheetBlock(
+                    title: sheetContext.t('checkout.mixed_regular_title'),
+                    note: sheetContext.t('checkout.mixed_regular_note'),
+                    items: codItems,
+                    subtotalPaise: codPayPaise,
+                  ),
+                  const SizedBox(height: CustomerSpacing.md),
+                  _SheetAmountRow(
+                    label: sheetContext.t('bill.delivery_fee'),
+                    paise: deliveryFeePaise,
+                  ),
+                  const SizedBox(height: CustomerSpacing.xs),
+                  _SheetAmountRow(
+                    label: sheetContext.t('common.total'),
+                    paise: grandPaise,
+                    emphasize: true,
+                  ),
+                  const SizedBox(height: CustomerSpacing.lg),
+                  AppButton(
+                    label: sheetContext.t('checkout.mixed_pay_local', {
+                      'amount': _inr.format(onlinePayPaise / 100),
+                    }),
+                    onPressed: () => Navigator.of(sheetContext).pop(_MixedPayChoice.localOnly),
+                  ),
+                  const SizedBox(height: CustomerSpacing.sm),
+                  AppButton(
+                    label: sheetContext.t('checkout.mixed_pay_full', {
+                      'amount': _inr.format(grandPaise / 100),
+                    }),
+                    variant: AppButtonVariant.secondary,
+                    onPressed: () => Navigator.of(sheetContext).pop(_MixedPayChoice.payFull),
+                  ),
+                  const SizedBox(height: CustomerSpacing.sm),
+                  AppButton(
+                    label: sheetContext.t('common.cancel'),
+                    variant: AppButtonVariant.outline,
+                    onPressed: () => Navigator.of(sheetContext).pop(),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _openAddressSheet() async {
@@ -359,7 +495,18 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       );
     }
 
-    final isOnline = checkout.paymentMethod != 'COD';
+    final isLocalOnly = cart.isLocalOnly || (quote?.isLocalShop ?? false);
+    final isMixed = cart.hasMixedGroups;
+    final quoteCodAllowed = quote?.codAllowed ?? true;
+    final canSelectCod = cart.canSelectCod && quoteCodAllowed;
+    final requiresOnlineOnly = cart.requiresOnlineOnly || !quoteCodAllowed;
+    if (requiresOnlineOnly && checkout.paymentMethod == 'COD') {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ref.read(checkoutViewModelProvider.notifier).selectPaymentMethod('UPI');
+      });
+    }
+    final isOnline = requiresOnlineOnly || checkout.paymentMethod != 'COD';
     final totalPaise = quote?.grandTotalPaise ?? cart.subtotalPaise;
     final selectedAddress = checkout.selectedAddress;
 
@@ -446,16 +593,22 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 const SizedBox(height: CustomerSpacing.lg),
                 Text(ref.t('common.payment'), style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: CustomerSpacing.sm),
+                if (isLocalOnly || isMixed) ...[
+                  const LocalShopNote(),
+                  const SizedBox(height: CustomerSpacing.sm),
+                ],
+                if (canSelectCod) ...[
+                  _PaymentCard(
+                    selected: checkout.paymentMethod == 'COD',
+                    title: ref.t('checkout.cod'),
+                    subtitle: ref.t('checkout.cod_subtitle'),
+                    icon: Icons.payments_outlined,
+                    onTap: () => notifier.selectPaymentMethod('COD'),
+                  ),
+                  const SizedBox(height: CustomerSpacing.sm),
+                ],
                 _PaymentCard(
-                  selected: checkout.paymentMethod == 'COD',
-                  title: ref.t('checkout.cod'),
-                  subtitle: ref.t('checkout.cod_subtitle'),
-                  icon: Icons.payments_outlined,
-                  onTap: () => notifier.selectPaymentMethod('COD'),
-                ),
-                const SizedBox(height: CustomerSpacing.sm),
-                _PaymentCard(
-                  selected: checkout.paymentMethod == 'UPI',
+                  selected: isOnline,
                   title: ref.t('checkout.pay_online'),
                   subtitle: ref.t('checkout.pay_online_subtitle'),
                   icon: Icons.account_balance_wallet_outlined,
@@ -544,14 +697,103 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     Expanded(
                       child: AppButton(
                         label: isOnline ? ref.t('checkout.pay_place_order') : ref.t('checkout.place_order'),
-                        isLoading: checkout.isPlacing,
-                        onPressed: checkout.isPlacing ? null : _placeOrder,
+                        isLoading: checkout.isPlacing || _razorpayOpen,
+                        onPressed: checkout.isPlacing || _razorpayOpen ? null : _placeOrder,
                       ),
                     ),
                   ],
                 ),
               ),
             ),
+    );
+  }
+}
+
+enum _MixedPayChoice { localOnly, payFull }
+
+class _MixedSheetBlock extends StatelessWidget {
+  const _MixedSheetBlock({
+    required this.title,
+    required this.note,
+    required this.items,
+    required this.subtotalPaise,
+    this.accent = false,
+  });
+
+  final String title;
+  final String note;
+  final List<CartItem> items;
+  final int subtotalPaise;
+  final bool accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(CustomerSpacing.md),
+      decoration: BoxDecoration(
+        color: accent
+            ? CustomerColors.primaryContainer.withValues(alpha: 0.22)
+            : CustomerColors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(CustomerRadius.lg),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(title, style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: CustomerSpacing.xs),
+          Text(
+            note,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: CustomerColors.onSurfaceVariant,
+                ),
+          ),
+          const SizedBox(height: CustomerSpacing.sm),
+          for (final item in items)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
+              child: Row(
+                children: [
+                  Expanded(child: Text(item.product.name)),
+                  Text('× ${item.quantity}'),
+                ],
+              ),
+            ),
+          const SizedBox(height: CustomerSpacing.sm),
+          Row(
+            children: [
+              Expanded(child: Text(context.t('common.total'))),
+              PriceText(paise: subtotalPaise),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SheetAmountRow extends StatelessWidget {
+  const _SheetAmountRow({
+    required this.label,
+    required this.paise,
+    this.emphasize = false,
+  });
+
+  final String label;
+  final int paise;
+  final bool emphasize;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: emphasize ? Theme.of(context).textTheme.titleMedium : Theme.of(context).textTheme.bodyMedium,
+          ),
+        ),
+        PriceText(paise: paise),
+      ],
     );
   }
 }

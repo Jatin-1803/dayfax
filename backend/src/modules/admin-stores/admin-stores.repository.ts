@@ -22,8 +22,8 @@ export class AdminStoresRepository {
       `INSERT INTO stores (
          id, service_area_id, name, slug, store_type, image_url, description,
          phone_country_code, phone, address_line1, address_line2, landmark,
-         city, pincode, latitude, longitude, is_popular, is_active
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         city, pincode, latitude, longitude, is_popular, online_payment_only, is_active
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         input.serviceAreaId,
@@ -42,6 +42,7 @@ export class AdminStoresRepository {
         input.latitude ?? null,
         input.longitude ?? null,
         input.isPopular ? 1 : 0,
+        input.onlinePaymentOnly ? 1 : 0,
         input.isActive ? 1 : 0,
       ],
     );
@@ -67,6 +68,7 @@ export class AdminStoresRepository {
       ['latitude', 'latitude', (v) => v],
       ['longitude', 'longitude', (v) => v],
       ['isPopular', 'is_popular', (v) => (v ? 1 : 0)],
+      ['onlinePaymentOnly', 'online_payment_only', (v) => (v ? 1 : 0)],
       ['isActive', 'is_active', (v) => (v ? 1 : 0)],
     ];
 
@@ -121,6 +123,7 @@ export class AdminStoresRepository {
       unitLabel: string;
       pricePaise: number;
       mrpPaise: number;
+      costPricePaise: number;
       quantityAvailable: number;
       isAvailable: boolean;
       sku: string;
@@ -150,9 +153,17 @@ export class AdminStoresRepository {
     await conn.query(
       `INSERT INTO product_variants (
          id, product_id, sku, unit_label, unit_value, unit_type,
-         mrp_paise, price_paise, is_default, is_active
-       ) VALUES (?, ?, ?, ?, 1, 'pc', ?, ?, 1, 1)`,
-      [variantId, productId, input.sku, input.unitLabel, input.mrpPaise, input.pricePaise],
+         mrp_paise, price_paise, cost_price_paise, is_default, is_active
+       ) VALUES (?, ?, ?, ?, 1, 'pc', ?, ?, ?, 1, 1)`,
+      [
+        variantId,
+        productId,
+        input.sku,
+        input.unitLabel,
+        input.mrpPaise,
+        input.pricePaise,
+        input.costPricePaise,
+      ],
     );
 
     await conn.query(
@@ -190,7 +201,7 @@ export class AdminStoresRepository {
     const [rows] = await this.db.query<RowDataPacket[]>(
       `SELECT p.id, p.name, p.name_hi, p.slug, p.description, p.description_hi, p.brand,
               p.image_url, p.is_active, p.category_id, sp.is_available,
-              pv.id AS variant_id, pv.price_paise, pv.mrp_paise, pv.unit_label,
+              pv.id AS variant_id, pv.price_paise, pv.mrp_paise, pv.cost_price_paise, pv.unit_label,
               COALESCE(inv.quantity_available, 0) AS quantity_available
        FROM store_products sp
        INNER JOIN products p ON p.id = sp.product_id AND p.deleted_at IS NULL
@@ -211,7 +222,7 @@ export class AdminStoresRepository {
     const [rows] = await this.db.query<RowDataPacket[]>(
       `SELECT p.id, p.name, p.name_hi, p.slug, p.description, p.description_hi, p.brand,
               p.image_url, p.is_active, p.category_id, sp.is_available,
-              pv.id AS variant_id, pv.price_paise, pv.mrp_paise, pv.unit_label,
+              pv.id AS variant_id, pv.price_paise, pv.mrp_paise, pv.cost_price_paise, pv.unit_label,
               COALESCE(inv.quantity_available, 0) AS quantity_available
        FROM store_products sp
        INNER JOIN products p ON p.id = sp.product_id AND p.deleted_at IS NULL
@@ -232,6 +243,7 @@ export class AdminStoresRepository {
       isAvailable?: boolean;
       pricePaise?: number;
       mrpPaise?: number;
+      costPricePaise?: number;
       quantityAvailable?: number;
       unitLabel?: string;
       name?: string;
@@ -290,6 +302,10 @@ export class AdminStoresRepository {
       if (input.mrpPaise !== undefined) {
         variantSets.push('mrp_paise = ?');
         variantParams.push(input.mrpPaise);
+      }
+      if (input.costPricePaise !== undefined) {
+        variantSets.push('cost_price_paise = ?');
+        variantParams.push(input.costPricePaise);
       }
       if (input.unitLabel !== undefined) {
         variantSets.push('unit_label = ?');

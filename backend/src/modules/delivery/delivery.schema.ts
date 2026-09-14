@@ -9,10 +9,34 @@ export const deliveryAssignmentStatusSchema = z.enum([
   'CANCELLED',
 ]);
 
+const PARTNER_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Calendar day in India, independent of the MySQL session timezone. */
+export function istToday(now = new Date()): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(now);
+}
+
+function partnerDateField(label: string) {
+  return z
+    .string()
+    .regex(PARTNER_DATE, `${label} must be YYYY-MM-DD`)
+    .refine((value) => value <= istToday(), { message: `${label} cannot be in the future` });
+}
+
+export const statsQuerySchema = z.object({
+  date: partnerDateField('Date').optional(),
+});
+
 export const listJobsSchema = z.object({
   tab: z.enum(['available', 'active', 'completed']).default('available'),
   page: z.coerce.number().int().positive().optional(),
   limit: z.coerce.number().int().positive().max(50).optional(),
+  date: partnerDateField('Date').optional(),
 });
 
 export const updateAssignmentStatusSchema = z
@@ -39,6 +63,7 @@ export const updateAssignmentStatusSchema = z
 
 export type DeliveryAssignmentStatus = z.infer<typeof deliveryAssignmentStatusSchema>;
 export type ListJobsQuery = z.infer<typeof listJobsSchema>;
+export type StatsQuery = z.infer<typeof statsQuerySchema>;
 export type UpdateAssignmentStatusInput = z.infer<typeof updateAssignmentStatusSchema>;
 
 export const ACTIVE_ASSIGNMENT_STATUSES = ['ASSIGNED', 'ACCEPTED', 'IN_PROGRESS'] as const;

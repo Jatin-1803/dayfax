@@ -22,21 +22,52 @@ Future<bool> showAddressFormSheet(
     showDragHandle: true,
     useSafeArea: true,
     builder: (sheetContext) {
-      final media = MediaQuery.of(sheetContext);
-      return Padding(
-        padding: EdgeInsets.only(bottom: media.viewInsets.bottom),
-        child: SizedBox(
-          height: media.size.height * 0.88,
-          child: AddressForm(
-            initial: initial,
-            prefill: prefill,
-            onSaved: () => Navigator.pop(sheetContext, true),
-          ),
+      return _KeyboardInset(
+        child: AddressForm(
+          initial: initial,
+          prefill: prefill,
+          onSaved: () => Navigator.pop(sheetContext, true),
         ),
       );
     },
   );
   return saved == true;
+}
+
+/// Applies the keyboard inset from [didChangeDependencies], which is the
+/// safe place to read ancestors. A bare [MediaQuery.of] in the sheet builder
+/// runs again while the route is already deactivated and the keyboard hides.
+class _KeyboardInset extends StatefulWidget {
+  const _KeyboardInset({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_KeyboardInset> createState() => _KeyboardInsetState();
+}
+
+class _KeyboardInsetState extends State<_KeyboardInset> {
+  var _bottom = 0.0;
+  var _sheetHeight = 0.0;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final media = MediaQuery.of(context);
+    _bottom = media.viewInsets.bottom;
+    _sheetHeight = media.size.height * 0.88;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: _bottom),
+      child: SizedBox(
+        height: _sheetHeight,
+        child: widget.child,
+      ),
+    );
+  }
 }
 
 class AddressForm extends ConsumerStatefulWidget {
@@ -162,6 +193,10 @@ class _AddressFormState extends ConsumerState<AddressForm> {
     try {
       await ref.read(addressesViewModelProvider.notifier).save(_draft);
       if (!mounted) return;
+      setState(() => _saving = false);
+      // Drop focus before the route unmounts so the keyboard inset
+      // change does not look up a deactivated ancestor.
+      FocusManager.instance.primaryFocus?.unfocus();
       final onSaved = widget.onSaved;
       if (onSaved != null) {
         onSaved();
@@ -169,9 +204,15 @@ class _AddressFormState extends ConsumerState<AddressForm> {
         Navigator.of(context).pop();
       }
     } on AppFailure catch (failure) {
-      setState(() => _error = failure.message);
-    } finally {
-      if (mounted) setState(() => _saving = false);
+      if (!mounted) return;
+      setState(() {
+        _saving = false;
+        _error = failure.message;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      rethrow;
     }
   }
 

@@ -3,6 +3,7 @@ import { AppError, ForbiddenError, NotFoundError, ValidationError } from '../../
 import { logger } from '../../common/logger/logger.js';
 import { withTransaction } from '../../common/database/pool.js';
 import { NotificationsRepository } from '../notifications/notifications.repository.js';
+import { pushToUser, schedulePush } from '../notifications/push.service.js';
 import { generateDeliveryOtp } from '../orders/delivery-otp.js';
 import { decidePaymentCapture } from '../orders/order-acceptance.js';
 import { OrdersRepository } from '../orders/orders.repository.js';
@@ -212,7 +213,7 @@ export class CodPaymentService {
       return { status: 'CAPTURED' as const, amountPaise: context.payment.amount_paise };
     }
 
-    return withTransaction(async (conn) => {
+    const result = await withTransaction(async (conn) => {
       const payment = await this.ordersRepo.lockPaymentByOrderId(orderId, conn);
       if (!payment || payment.method !== 'COD') {
         throw new ValidationError('Payment cannot be collected for this order');
@@ -288,8 +289,27 @@ export class CodPaymentService {
         partnerId,
         amountPaise: payment.amount_paise,
       });
-      return { status: 'CAPTURED' as const, amountPaise: payment.amount_paise };
+      return {
+        status: 'CAPTURED' as const,
+        amountPaise: payment.amount_paise,
+        customerId: order.user_id,
+        orderNumber: order.order_number,
+      };
     });
+
+    if ('customerId' in result && result.customerId && result.orderNumber) {
+      schedulePush(() =>
+        pushToUser({
+          userId: result.customerId,
+          appRole: 'CUSTOMER',
+          copyKey: 'cash_collected',
+          orderId,
+          orderNumber: result.orderNumber,
+        }),
+      );
+    }
+
+    return { status: result.status, amountPaise: result.amountPaise };
   }
 
   async confirmCodPayment(input: ConfirmCodPaymentInput): Promise<CodConfirmOutcome> {
@@ -302,7 +322,8 @@ export class CodPaymentService {
       return 'IGNORED';
     }
 
-    return withTransaction(async (conn) => {
+    const paidNotice = { value: null as { userId: string; orderNumber: string } | null };
+    const outcome = await withTransaction(async (conn) => {
       const payment = await this.ordersRepo.lockPaymentByOrderId(input.orderId, conn);
       if (!payment) return 'IGNORED';
 
@@ -393,6 +414,7 @@ export class CodPaymentService {
           },
           conn,
         );
+        paidNotice.value = { userId: order.user_id, orderNumber: order.order_number };
       }
 
       logger.info('payment_verified', {
@@ -403,6 +425,21 @@ export class CodPaymentService {
       });
       return 'CAPTURED';
     });
+
+    const notice = paidNotice.value;
+    if (outcome === 'CAPTURED' && notice) {
+      schedulePush(() =>
+        pushToUser({
+          userId: notice.userId,
+          appRole: 'CUSTOMER',
+          copyKey: 'payment_received',
+          orderId: input.orderId,
+          orderNumber: notice.orderNumber,
+        }),
+      );
+    }
+
+    return outcome;
   }
 
   private async lockMatchingAttempt(input: ConfirmCodPaymentInput, conn: PoolConnection) {

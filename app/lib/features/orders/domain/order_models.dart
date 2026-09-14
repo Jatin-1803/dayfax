@@ -25,6 +25,9 @@ class RazorpayCheckout extends Equatable {
     required this.currency,
     required this.name,
     required this.description,
+    this.contact,
+    this.customerName,
+    this.email,
   });
 
   final String keyId;
@@ -33,6 +36,9 @@ class RazorpayCheckout extends Equatable {
   final String currency;
   final String name;
   final String description;
+  final String? contact;
+  final String? customerName;
+  final String? email;
 
   factory RazorpayCheckout.fromJson(Map<String, dynamic> json) {
     return RazorpayCheckout(
@@ -42,11 +48,57 @@ class RazorpayCheckout extends Equatable {
       currency: json['currency'] as String? ?? 'INR',
       name: json['name'] as String? ?? 'DayFax',
       description: json['description'] as String? ?? 'Order payment',
+      contact: json['contact'] as String?,
+      customerName: json['customerName'] as String?,
+      email: json['email'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toOpenOptions() {
+    final prefill = <String, String>{};
+    if (contact != null && contact!.isNotEmpty) prefill['contact'] = contact!;
+    if (customerName != null && customerName!.isNotEmpty) prefill['name'] = customerName!;
+    if (email != null && email!.isNotEmpty) prefill['email'] = email!;
+    final readonly = {for (final key in prefill.keys) key: true};
+    return {
+      'key': keyId,
+      'amount': amountPaise,
+      'currency': currency,
+      'name': name,
+      'description': description,
+      'order_id': orderId,
+      'theme': {'color': '#006C49'},
+      if (prefill.isNotEmpty) 'prefill': prefill,
+      if (readonly.isNotEmpty) 'readonly': readonly,
+    };
+  }
+
+  @override
+  List<Object?> get props => [keyId, orderId, amountPaise, contact, customerName, email];
+}
+
+class OnlinePaymentStart extends Equatable {
+  const OnlinePaymentStart({
+    required this.alreadyPaid,
+    required this.order,
+    this.razorpay,
+  });
+
+  final bool alreadyPaid;
+  final CustomerOrder order;
+  final RazorpayCheckout? razorpay;
+
+  factory OnlinePaymentStart.fromJson(Map<String, dynamic> json) {
+    final razorpayJson = json['razorpay'] as Map<String, dynamic>?;
+    return OnlinePaymentStart(
+      alreadyPaid: json['alreadyPaid'] as bool? ?? false,
+      order: CustomerOrder.fromJson(json['order'] as Map<String, dynamic>),
+      razorpay: razorpayJson == null ? null : RazorpayCheckout.fromJson(razorpayJson),
     );
   }
 
   @override
-  List<Object?> get props => [keyId, orderId, amountPaise];
+  List<Object?> get props => [alreadyPaid, order, razorpay];
 }
 
 class CheckoutResult extends Equatable {
@@ -104,6 +156,7 @@ class OrderItem extends Equatable {
     required this.quantity,
     required this.lineTotalPaise,
     this.imageUrl,
+    this.isLocalShop = false,
   });
 
   final String id;
@@ -113,6 +166,7 @@ class OrderItem extends Equatable {
   final int quantity;
   final int lineTotalPaise;
   final String? imageUrl;
+  final bool isLocalShop;
 
   factory OrderItem.fromJson(Map<String, dynamic> json) {
     return OrderItem(
@@ -123,6 +177,7 @@ class OrderItem extends Equatable {
       quantity: (json['quantity'] as num).toInt(),
       lineTotalPaise: (json['lineTotalPaise'] as num).toInt(),
       imageUrl: json['imageUrl'] as String?,
+      isLocalShop: json['isLocalShop'] as bool? ?? false,
     );
   }
 
@@ -211,6 +266,116 @@ class OrderTimeline extends Equatable {
   List<Object?> get props => [currentStatus, steps, history];
 }
 
+class OrderReturnItem extends Equatable {
+  const OrderReturnItem({
+    required this.orderItemId,
+    required this.productName,
+    required this.quantity,
+    this.variantLabel,
+  });
+
+  final String orderItemId;
+  final String productName;
+  final String? variantLabel;
+  final int quantity;
+
+  factory OrderReturnItem.fromJson(Map<String, dynamic> json) {
+    return OrderReturnItem(
+      orderItemId: json['orderItemId'] as String? ?? '',
+      productName: json['productName'] as String? ?? '',
+      variantLabel: json['variantLabel'] as String?,
+      quantity: (json['quantity'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  @override
+  List<Object?> get props => [orderItemId, quantity];
+}
+
+class OrderReturnRequest extends Equatable {
+  const OrderReturnRequest({
+    required this.id,
+    required this.status,
+    required this.refundAmountPaise,
+    required this.refundMethod,
+    required this.refundStatus,
+    this.pickupCode,
+    this.adminNote,
+    this.items = const [],
+  });
+
+  final String id;
+  final String status;
+  final int refundAmountPaise;
+  final String refundMethod;
+  final String refundStatus;
+  final String? pickupCode;
+  final String? adminNote;
+  final List<OrderReturnItem> items;
+
+  factory OrderReturnRequest.fromJson(Map<String, dynamic> json) {
+    final itemsJson = json['items'] as List<dynamic>? ?? const [];
+    return OrderReturnRequest(
+      id: json['id'] as String? ?? '',
+      status: json['status'] as String? ?? '',
+      refundAmountPaise: (json['refundAmountPaise'] as num?)?.toInt() ?? 0,
+      refundMethod: json['refundMethod'] as String? ?? 'MANUAL',
+      refundStatus: json['refundStatus'] as String? ?? 'NONE',
+      pickupCode: json['pickupCode'] as String?,
+      adminNote: json['adminNote'] as String?,
+      items: itemsJson.whereType<Map<String, dynamic>>().map(OrderReturnItem.fromJson).toList(),
+    );
+  }
+
+  String get statusKey => switch (status) {
+        'PENDING_REVIEW' => 'returns.status_review',
+        'APPROVED' => 'returns.status_approved',
+        'REJECTED' => 'returns.status_rejected',
+        'PICKUP_IN_PROGRESS' => 'returns.status_pickup',
+        'PICKED_UP' => 'returns.status_picked_up',
+        'REFUND_PENDING' => 'returns.status_refund_pending',
+        'REFUNDED' => 'returns.status_refunded',
+        _ => 'returns.status_review',
+      };
+
+  String get chipKey => switch (status) {
+        'PENDING_REVIEW' => 'returns.chip_review',
+        'APPROVED' => 'returns.chip_approved',
+        'REJECTED' => 'returns.chip_rejected',
+        'PICKUP_IN_PROGRESS' => 'returns.chip_pickup',
+        'PICKED_UP' => 'returns.chip_picked_up',
+        'REFUND_PENDING' => 'returns.chip_refund_pending',
+        'REFUNDED' => 'returns.chip_refunded',
+        _ => 'returns.chip_review',
+      };
+
+  @override
+  List<Object?> get props => [id, status, pickupCode, refundStatus];
+}
+
+class LinkedOrder extends Equatable {
+  const LinkedOrder({
+    required this.id,
+    required this.orderNumber,
+    this.isLocalShop = false,
+  });
+
+  final String id;
+  final String orderNumber;
+  final bool isLocalShop;
+
+  factory LinkedOrder.fromJson(Map<String, dynamic> json) {
+    return LinkedOrder(
+      id: json['id'] as String,
+      orderNumber: json['orderNumber'] as String,
+      isLocalShop: json['isLocalShop'] as bool? ?? false,
+    );
+  }
+
+  @override
+  List<Object?> get props => [id, orderNumber, isLocalShop];
+}
+
 class CustomerOrder extends Equatable {
   const CustomerOrder({
     required this.id,
@@ -230,6 +395,12 @@ class CustomerOrder extends Equatable {
     this.payment,
     this.items = const [],
     this.timeline,
+    this.canCancel = false,
+    this.canPayOnline = false,
+    this.canChatSupport = false,
+    this.isLocalShop = false,
+    this.linkedOrders = const [],
+    this.returnRequest,
   });
 
   final String id;
@@ -249,12 +420,20 @@ class CustomerOrder extends Equatable {
   final OrderPayment? payment;
   final List<OrderItem> items;
   final OrderTimeline? timeline;
+  final bool canCancel;
+  final bool canPayOnline;
+  final bool canChatSupport;
+  final bool isLocalShop;
+  final List<LinkedOrder> linkedOrders;
+  final OrderReturnRequest? returnRequest;
 
   factory CustomerOrder.fromJson(Map<String, dynamic> json) {
     final store = json['store'] as Map<String, dynamic>? ?? const {};
     final paymentJson = json['payment'] as Map<String, dynamic>?;
     final timelineJson = json['timeline'] as Map<String, dynamic>?;
     final itemsJson = json['items'] as List<dynamic>?;
+    final returnJson = json['returnRequest'] as Map<String, dynamic>?;
+    final linkedJson = json['linkedOrders'] as List<dynamic>? ?? const [];
     final otpRaw = json['deliveryOtp'] as String?;
     return CustomerOrder(
       id: json['id'] as String,
@@ -278,6 +457,12 @@ class CustomerOrder extends Equatable {
           ? const []
           : itemsJson.whereType<Map<String, dynamic>>().map(OrderItem.fromJson).toList(),
       timeline: timelineJson == null ? null : OrderTimeline.fromJson(timelineJson),
+      canCancel: json['canCancel'] as bool? ?? false,
+      canPayOnline: json['canPayOnline'] as bool? ?? false,
+      canChatSupport: json['canChatSupport'] as bool? ?? json['status'] == 'DELIVERED',
+      isLocalShop: json['isLocalShop'] as bool? ?? false,
+      linkedOrders: linkedJson.whereType<Map<String, dynamic>>().map(LinkedOrder.fromJson).toList(),
+      returnRequest: returnJson == null ? null : OrderReturnRequest.fromJson(returnJson),
     );
   }
 
@@ -287,11 +472,18 @@ class CustomerOrder extends Equatable {
 
   bool get isCod => payment?.method == 'COD';
 
+  bool get keepsDeliveredWithReturn => status == 'DELIVERED' && returnRequest != null;
+
+  String get paymentMethodKey => isCod ? 'orders.payment_cod' : 'orders.payment_online';
+
   bool get isPaymentCaptured => payment?.status == 'CAPTURED';
 
   bool get showDeliveryOtp => hasDeliveryOtp && (!isCod || isPaymentCaptured);
 
+  String? get returnStatusChipKey => returnRequest?.chipKey;
+
   String get statusMessageKey {
+    if (status == 'DELIVERED' && returnRequest != null) return returnRequest!.statusKey;
     if (status == 'CANCELLED') return 'orders.status_cancelled';
     if (status == 'DELIVERED') return 'orders.delivered_success';
     if (status == 'PENDING') {
@@ -322,7 +514,7 @@ class CustomerOrder extends Equatable {
   }
 
   @override
-  List<Object?> get props => [id, orderNumber, status, grandTotalPaise, deliveryOtp];
+  List<Object?> get props => [id, orderNumber, status, grandTotalPaise, deliveryOtp, returnRequest?.status];
 }
 
 class OrdersPage extends Equatable {

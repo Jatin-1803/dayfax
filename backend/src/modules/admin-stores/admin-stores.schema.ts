@@ -33,6 +33,7 @@ export const createStoreSchema = z.object({
   latitude: z.number().min(-90).max(90).nullable().optional(),
   longitude: z.number().min(-180).max(180).nullable().optional(),
   isPopular: z.boolean().optional().default(true),
+  onlinePaymentOnly: z.boolean().optional().default(false),
   isActive: z.boolean().optional().default(true),
 });
 
@@ -59,6 +60,7 @@ export const patchStoreSchema = z
     latitude: z.number().min(-90).max(90).nullable().optional(),
     longitude: z.number().min(-180).max(180).nullable().optional(),
     isPopular: z.boolean().optional(),
+    onlinePaymentOnly: z.boolean().optional(),
     isActive: z.boolean().optional(),
   })
   .refine((v) => Object.keys(v).length > 0, { message: 'Provide at least one field' });
@@ -70,6 +72,7 @@ export const patchStoreProductSchema = z
     isAvailable: z.boolean().optional(),
     pricePaise: z.number().int().positive().optional(),
     mrpPaise: z.number().int().positive().optional(),
+    costPricePaise: z.number().int().min(0).optional(),
     quantityAvailable: z.number().int().min(0).optional(),
     unitLabel: z.string().trim().min(1).max(40).optional(),
     name: z.string().trim().min(1).max(180).optional(),
@@ -96,6 +99,8 @@ export const createAdminProductSchema = z.object({
   unitLabel: z.string().trim().min(1).max(40).optional().default('1 pc'),
   pricePaise: z.number().int().positive(),
   mrpPaise: z.number().int().positive().optional(),
+  /** Actual business cost for this product (paise). Mandatory for new products. */
+  costPricePaise: z.number().int().min(0),
   quantityAvailable: z.number().int().min(0).optional().default(100),
   isAvailable: z.boolean().optional().default(true),
 });

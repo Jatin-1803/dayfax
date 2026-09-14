@@ -106,9 +106,11 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
   @override
   Widget build(BuildContext context) {
     ref.listen<AuthUiState>(authViewModelProvider, (previous, next) {
+      if (next is AuthPasswordSetupRequired) {
+        context.go('/login/create-password');
+      }
       if (next is AuthAuthenticated) {
-        final role = ref.read(appRoleProvider);
-        context.go(homePathForRole(role));
+        context.go(homePathForRole(ref.read(appRoleProvider)));
       }
       if (next is AuthError) {
         ScaffoldMessenger.of(context).showSnackBar(

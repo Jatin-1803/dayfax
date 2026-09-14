@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs';
 import { createApp } from './app.js';
 import { env } from './config/env.js';
 import { closePool } from './common/database/pool.js';
@@ -15,6 +16,7 @@ const server = app.listen(env.PORT, host, () => {
   logger.info(`DayFax API listening on ${host}:${env.PORT}`, {
     env: env.NODE_ENV,
     prefix: env.API_PREFIX,
+    push: existsSync(env.FIREBASE_SERVICE_ACCOUNT_PATH) ? 'configured' : 'off',
   });
   startUnpaidOrderReclaimScheduler();
 });

@@ -30,15 +30,18 @@ export class ValidationError extends AppError {
 }
 
 export class UnauthorizedError extends AppError {
-  constructor(message = 'Authentication required') {
-    super(message, { statusCode: 401, code: 'UNAUTHORIZED' });
+  constructor(message = 'Authentication required', code = 'UNAUTHORIZED') {
+    super(message, { statusCode: 401, code });
     this.name = 'UnauthorizedError';
   }
 }
 
 export class ForbiddenError extends AppError {
-  constructor(message = 'You do not have permission to perform this action') {
-    super(message, { statusCode: 403, code: 'FORBIDDEN' });
+  constructor(
+    message = 'You do not have permission to perform this action',
+    code = 'FORBIDDEN',
+  ) {
+    super(message, { statusCode: 403, code });
     this.name = 'ForbiddenError';
   }
 }

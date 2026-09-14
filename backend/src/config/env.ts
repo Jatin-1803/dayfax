@@ -41,7 +41,7 @@ const envSchema = z.object({
     .transform((v) => v === 'true'),
   JWT_ACCESS_SECRET: z.string().min(16),
   JWT_REFRESH_SECRET: z.string().min(16),
-  JWT_ACCESS_EXPIRES_IN: z.string().default('15m'),
+  JWT_ACCESS_EXPIRES_IN: z.string().default('12h'),
   JWT_REFRESH_EXPIRES_IN: z.string().default('30d'),
   OTP_LENGTH: z.coerce.number().default(4),
   OTP_EXPIRES_SECONDS: z.coerce.number().default(300),
@@ -58,6 +58,14 @@ const envSchema = z.object({
   RAZORPAY_KEY_SECRET: z.string().optional().default(''),
   /** HMAC secret from the Razorpay dashboard webhook. Never send this to clients. */
   RAZORPAY_WEBHOOK_SECRET: z.string().optional().default(''),
+  /** Server-only. Never send this to the app or admin SPA. */
+  GEMINI_API_KEY: z.string().optional().default(''),
+  GEMINI_MODEL: z.string().default('gemini-2.5-flash'),
+  /**
+   * Absolute path to a Firebase service-account JSON. Server-only.
+   * Leave blank to skip push (dev/tests). Never commit this file.
+   */
+  FIREBASE_SERVICE_ACCOUNT_PATH: z.string().optional().default(''),
   MEILI_HOST: z.string().optional().default(''),
   MEILI_MASTER_KEY: z.string().optional().default(''),
   MEILI_INDEX_PRODUCTS: z.string().default('products'),
@@ -68,6 +76,20 @@ const envSchema = z.object({
   /** Legacy: optional phone ADMIN role on app users table (not used by admin SPA). */
   SEED_ADMIN_PHONE: z.string().default(''),
   SEED_ADMIN_PHONE_COUNTRY_CODE: z.string().trim().min(1).max(8).default('+91'),
+  /**
+   * Comma-separated Google OAuth client IDs allowed as ID-token audiences
+   * (Web + Android). Required for POST /auth/google. Leave blank to disable.
+   */
+  GOOGLE_CLIENT_IDS: z
+    .string()
+    .optional()
+    .default('')
+    .transform((v) =>
+      v
+        .split(',')
+        .map((id) => id.trim())
+        .filter((id) => id.length > 0),
+    ),
 });
 
 const parsed = envSchema.safeParse(process.env);

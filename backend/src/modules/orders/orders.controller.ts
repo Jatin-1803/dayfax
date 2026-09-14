@@ -29,6 +29,30 @@ export class OrdersController {
     }
   };
 
+  abandonPayment = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const data = await this.service.abandonCheckoutPayment(
+        req.user!.id,
+        req.params.idOrNumber as string,
+      );
+      sendSuccess(res, data, 'Payment cancelled');
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  startOnlinePayment = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const data = await this.service.startOnlinePayment(
+        req.user!.id,
+        req.params.idOrNumber as string,
+      );
+      sendSuccess(res, data, data.alreadyPaid ? 'Payment already received' : 'Payment started');
+    } catch (error) {
+      next(error);
+    }
+  };
+
   verifyPayment = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const data = await this.service.verifyPayment(
@@ -70,6 +94,15 @@ export class OrdersController {
         req.params.idOrNumber as string,
       );
       sendSuccess(res, data, 'Order timeline fetched');
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  cancel = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const data = await this.service.cancel(req.user!.id, req.params.idOrNumber as string);
+      sendSuccess(res, data, 'Order cancelled');
     } catch (error) {
       next(error);
     }

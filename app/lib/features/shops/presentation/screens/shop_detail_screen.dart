@@ -7,6 +7,7 @@ import '../../../../core/theme/customer/customer_colors.dart';
 import '../../../../core/theme/customer/customer_radius.dart';
 import '../../../../core/theme/customer/customer_spacing.dart';
 import '../../../../shared/widgets/app_search_bar.dart';
+import '../../../../shared/widgets/local_shop_note.dart';
 import '../../../../shared/widgets/product_card.dart';
 import '../../../../shared/widgets/state_widgets.dart';
 import '../../../../shared/widgets/sticky_cart_bar.dart';
@@ -156,6 +157,18 @@ class _ShopDetailScreenState extends ConsumerState<ShopDetailScreen> {
                 ),
               ),
             ),
+            if (shop.storeType == 'FOOD')
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    CustomerSpacing.marginMobile,
+                    CustomerSpacing.sm,
+                    CustomerSpacing.marginMobile,
+                    0,
+                  ),
+                  child: LocalShopNote(),
+                ),
+              ),
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(

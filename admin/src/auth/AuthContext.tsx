@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from 'react';
 import {
+  ApiError,
   apiRequest,
   clearStoredTokens,
   getStoredTokens,
@@ -48,14 +49,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
     (async () => {
       try {
-        const { accessToken } = getStoredTokens();
-        if (!accessToken) {
+        const { accessToken, refreshToken } = getStoredTokens();
+        if (!accessToken && !refreshToken) {
           if (!cancelled) setUser(null);
           return;
         }
         await refreshMe();
-      } catch {
-        clearStoredTokens();
+      } catch (err) {
+        const authFailed = err instanceof ApiError && (err.status === 401 || err.status === 403);
+        if (authFailed) {
+          clearStoredTokens();
+        }
         if (!cancelled) setUser(null);
       } finally {
         if (!cancelled) setLoading(false);

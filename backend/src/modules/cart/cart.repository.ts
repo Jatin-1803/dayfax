@@ -13,6 +13,9 @@ export interface CartRow {
 export interface CartItemRow {
   id: string;
   cart_id: string;
+  store_id: string;
+  store_type: string;
+  online_payment_only: number;
   variant_id: string;
   quantity: number;
   unit_price_paise: number;
@@ -31,8 +34,10 @@ export interface SellableVariant {
   product_id: string;
   store_id: string;
   service_area_id: string;
+  store_type: string;
   price_paise: number;
   mrp_paise: number;
+  cost_price_paise: number | null;
   quantity_available: number;
   is_available: number;
   product_active: number;
@@ -80,11 +85,25 @@ export class CartRepository {
     await conn.query(`UPDATE carts SET updated_at = CURRENT_TIMESTAMP WHERE id = ?`, [cartId]);
   }
 
+  async findStoreType(
+    storeId: string,
+    conn: Pool | PoolConnection = this.db,
+  ): Promise<string | null> {
+    const [rows] = await conn.query<RowDataPacket[]>(
+      `SELECT store_type FROM stores WHERE id = ? AND deleted_at IS NULL LIMIT 1`,
+      [storeId],
+    );
+    return (rows[0]?.store_type as string | undefined) ?? null;
+  }
+
   async listItems(cartId: string, conn: Pool | PoolConnection = this.db): Promise<CartItemRow[]> {
     const [rows] = await conn.query<RowDataPacket[]>(
       `SELECT
           ci.id,
           ci.cart_id,
+          ci.store_id,
+          s.store_type,
+          s.online_payment_only,
           ci.variant_id,
           ci.quantity,
           ci.unit_price_paise,
@@ -99,10 +118,10 @@ export class CartRepository {
        FROM cart_items ci
        INNER JOIN product_variants pv ON pv.id = ci.variant_id
        INNER JOIN products p ON p.id = pv.product_id
-       INNER JOIN carts c ON c.id = ci.cart_id
+       INNER JOIN stores s ON s.id = ci.store_id
        LEFT JOIN inventory inv
          ON inv.variant_id = ci.variant_id
-        AND inv.store_id = c.store_id
+        AND inv.store_id = ci.store_id
        WHERE ci.cart_id = ?
        ORDER BY ci.created_at ASC`,
       [cartId],
@@ -110,22 +129,26 @@ export class CartRepository {
     return rows as CartItemRow[];
   }
 
-  async findItem(cartId: string, itemId: string): Promise<{ id: string; variant_id: string; quantity: number } | null> {
+  async findItem(
+    cartId: string,
+    itemId: string,
+  ): Promise<{ id: string; variant_id: string; store_id: string; quantity: number } | null> {
     const [rows] = await this.db.query<RowDataPacket[]>(
-      `SELECT id, variant_id, quantity FROM cart_items WHERE id = ? AND cart_id = ? LIMIT 1`,
+      `SELECT id, variant_id, store_id, quantity FROM cart_items WHERE id = ? AND cart_id = ? LIMIT 1`,
       [itemId, cartId],
     );
-    return (rows[0] as { id: string; variant_id: string; quantity: number }) ?? null;
+    return (rows[0] as { id: string; variant_id: string; store_id: string; quantity: number }) ?? null;
   }
 
   async findItemByVariant(
     cartId: string,
     variantId: string,
+    storeId: string,
     conn: Pool | PoolConnection = this.db,
   ): Promise<{ id: string; quantity: number } | null> {
     const [rows] = await conn.query<RowDataPacket[]>(
-      `SELECT id, quantity FROM cart_items WHERE cart_id = ? AND variant_id = ? LIMIT 1`,
-      [cartId, variantId],
+      `SELECT id, quantity FROM cart_items WHERE cart_id = ? AND variant_id = ? AND store_id = ? LIMIT 1`,
+      [cartId, variantId, storeId],
     );
     return (rows[0] as { id: string; quantity: number }) ?? null;
   }
@@ -133,6 +156,7 @@ export class CartRepository {
   async insertItem(
     input: {
       cartId: string;
+      storeId: string;
       variantId: string;
       quantity: number;
       unitPricePaise: number;
@@ -141,9 +165,9 @@ export class CartRepository {
   ): Promise<string> {
     const id = createId();
     await conn.query(
-      `INSERT INTO cart_items (id, cart_id, variant_id, quantity, unit_price_paise)
-       VALUES (?, ?, ?, ?, ?)`,
-      [id, input.cartId, input.variantId, input.quantity, input.unitPricePaise],
+      `INSERT INTO cart_items (id, cart_id, store_id, variant_id, quantity, unit_price_paise)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [id, input.cartId, input.storeId, input.variantId, input.quantity, input.unitPricePaise],
     );
     return id;
   }
@@ -207,8 +231,10 @@ export class CartRepository {
           p.id AS product_id,
           s.id AS store_id,
           s.service_area_id,
+          s.store_type,
           pv.price_paise,
           pv.mrp_paise,
+          pv.cost_price_paise,
           COALESCE(inv.quantity_available, 0) AS quantity_available,
           sp.is_available,
           p.is_active AS product_active,

@@ -3,11 +3,16 @@ import { logger } from '../../common/logger/logger.js';
 import { withTransaction } from '../../common/database/pool.js';
 import { OrdersRepository } from '../orders/orders.repository.js';
 import {
+  isDeferredCodSiblingPayment,
+  partnerClaimOrderIdsAfterPayment,
+} from '../orders/checkout-placement-notices.js';
+import {
   isRazorpayWebhookConfigured,
   verifyWebhookSignature,
 } from './razorpay.client.js';
 import { PaymentAttemptsRepository } from './payment-attempts.repository.js';
 import { CodPaymentService, notesOrderId } from './cod-payment.service.js';
+import { pushCustomerForOrder, pushPartnersForOrder, schedulePush } from '../notifications/push.service.js';
 
 const HANDLED_EVENTS = new Set(['qr_code.credited', 'payment.captured', 'order.paid']);
 
@@ -197,6 +202,9 @@ async function processPaymentEvent(input: {
     return 'PROCESSED';
   }
 
+  let captured = false;
+  const capturedOrderIds: string[] = [];
+  const deferredCodOrderIds: string[] = [];
   await withTransaction(async (conn) => {
     const locked = await ordersRepo.lockPaymentByOrderId(orderId, conn);
     if (!locked || locked.status === 'CAPTURED') return;
@@ -212,7 +220,57 @@ async function processPaymentEvent(input: {
       },
       conn,
     );
+    captured = true;
+    capturedOrderIds.push(orderId);
+
+    const groupId = await ordersRepo.findCheckoutGroupId(orderId, conn);
+    if (!groupId) return;
+    const siblingIds = await ordersRepo.listOrderIdsByCheckoutGroup(groupId, conn);
+    const razorpayOrderId = payment.order_id ?? locked.provider_ref;
+    for (const siblingId of siblingIds) {
+      if (siblingId === orderId) continue;
+      const sibling = await ordersRepo.lockOrderById(siblingId, conn);
+      if (!sibling || sibling.status !== 'PENDING') continue;
+      const siblingPayment = await ordersRepo.lockPaymentByOrderId(siblingId, conn);
+      if (!siblingPayment || siblingPayment.status !== 'PENDING') continue;
+
+      if (
+        siblingPayment.provider === 'razorpay' &&
+        razorpayOrderId &&
+        siblingPayment.provider_ref === razorpayOrderId
+      ) {
+        await ordersRepo.updatePayment(
+          siblingPayment.id,
+          {
+            status: 'CAPTURED',
+            method: 'UPI',
+            provider: 'razorpay',
+            razorpayPaymentId: payment.id,
+            razorpayOrderId,
+            verificationSource: 'webhook',
+            paidAt: new Date(),
+          },
+          conn,
+        );
+        capturedOrderIds.push(siblingId);
+        continue;
+      }
+
+      if (isDeferredCodSiblingPayment(siblingPayment)) {
+        deferredCodOrderIds.push(siblingId);
+      }
+    }
   });
+
+  if (captured) {
+    schedulePush(() => pushCustomerForOrder(orderId, 'payment_successful'));
+    for (const claimId of partnerClaimOrderIdsAfterPayment({
+      capturedOrderIds,
+      deferredCodOrderIds,
+    })) {
+      schedulePush(() => pushPartnersForOrder(claimId, 'partner_new_order'));
+    }
+  }
 
   logger.info('payment_verified', {
     orderId,

@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "483191032228",
+    "project_id": "dayfax",
+    "storage_bucket": "dayfax.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:483191032228:android:2edc7fe8694ed180785931",
+        "android_client_info": {
+          "package_name": "com.dailyfax.customer"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "843431847120-93b5mnjvvpgko3kngt65r7ab2fssbfov.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.dailyfax.customer",
+            "certificate_hash": "d97a45aa203e047955cd1909aa35eed7d8a23da3"
+          }
+        },
+        {
+          "client_id": "843431847120-602npqj8o479691d0g0r1ncmqa4halkj.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAuOLXxyRzXAmVDfd_oH-wnr4rH5ocivPQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "843431847120-602npqj8o479691d0g0r1ncmqa4halkj.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

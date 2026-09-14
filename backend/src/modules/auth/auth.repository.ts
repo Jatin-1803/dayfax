@@ -1,18 +1,25 @@
 import { createHash, randomInt } from 'node:crypto';
 import type { Pool, PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
+import { REFRESH_REUSE_GRACE_SECONDS, sqlFlag } from '../../common/auth/token-session.js';
 import { getPool } from '../../common/database/pool.js';
 import { createId } from '../../common/utils/id.js';
 import type { RoleCode } from '../../common/middleware/auth.js';
 
 export interface UserRecord {
   id: string;
-  phone_country_code: string;
-  phone: string;
+  phone_country_code: string | null;
+  phone: string | null;
   full_name: string | null;
   email: string | null;
   avatar_url: string | null;
-  status: 'ACTIVE' | 'INACTIVE' | 'BLOCKED';
+  google_sub: string | null;
+  password_hash: string | null;
+  status: 'ACTIVE' | 'INACTIVE' | 'BLOCKED' | 'SUSPENDED' | 'BANNED' | 'SECURITY_LOCKED';
+  status_expires_at?: Date | null;
 }
+
+const USER_SELECT = `id, phone_country_code, phone, full_name, email, avatar_url, google_sub,
+              password_hash, status, status_expires_at`;
 
 function hashValue(value: string): string {
   return createHash('sha256').update(value).digest('hex');
@@ -103,13 +110,37 @@ export class AuthRepository {
     phone: string,
   ): Promise<UserRecord | null> {
     const [rows] = await this.db.query<RowDataPacket[]>(
-      `SELECT id, phone_country_code, phone, full_name, email, avatar_url, status
+      `SELECT ${USER_SELECT}
        FROM users
        WHERE phone_country_code = ?
          AND phone = ?
          AND deleted_at IS NULL
        LIMIT 1`,
       [phoneCountryCode, phone],
+    );
+    return (rows[0] as UserRecord) ?? null;
+  }
+
+  async findUserByGoogleSub(googleSub: string): Promise<UserRecord | null> {
+    const [rows] = await this.db.query<RowDataPacket[]>(
+      `SELECT ${USER_SELECT}
+       FROM users
+       WHERE google_sub = ?
+         AND deleted_at IS NULL
+       LIMIT 1`,
+      [googleSub],
+    );
+    return (rows[0] as UserRecord) ?? null;
+  }
+
+  async findUserByEmail(email: string): Promise<UserRecord | null> {
+    const [rows] = await this.db.query<RowDataPacket[]>(
+      `SELECT ${USER_SELECT}
+       FROM users
+       WHERE email = ?
+         AND deleted_at IS NULL
+       LIMIT 1`,
+      [email],
     );
     return (rows[0] as UserRecord) ?? null;
   }
@@ -129,6 +160,78 @@ export class AuthRepository {
       throw new Error('Failed to create user');
     }
     return user;
+  }
+
+  async createGoogleCustomerUser(input: {
+    googleSub: string;
+    email: string;
+    fullName: string | null;
+    avatarUrl: string | null;
+  }): Promise<UserRecord> {
+    const userId = createId();
+    await this.db.execute(
+      `INSERT INTO users
+        (id, phone_country_code, phone, full_name, email, avatar_url, google_sub, status)
+       VALUES (?, NULL, NULL, ?, ?, ?, ?, 'ACTIVE')`,
+      [
+        userId,
+        input.fullName,
+        input.email,
+        input.avatarUrl,
+        input.googleSub,
+      ],
+    );
+
+    await this.ensureRole(userId, 'CUSTOMER');
+
+    const user = await this.findUserById(userId);
+    if (!user) {
+      throw new Error('Failed to create Google user');
+    }
+    return user;
+  }
+
+  async linkGoogleSub(userId: string, googleSub: string): Promise<void> {
+    await this.db.execute(
+      `UPDATE users SET google_sub = ? WHERE id = ? AND google_sub IS NULL`,
+      [googleSub, userId],
+    );
+  }
+
+  async setUserPhone(
+    userId: string,
+    phoneCountryCode: string,
+    phone: string,
+  ): Promise<void> {
+    await this.db.execute(
+      `UPDATE users
+       SET phone_country_code = ?, phone = ?
+       WHERE id = ?`,
+      [phoneCountryCode, phone, userId],
+    );
+  }
+
+  async updateGoogleProfileFields(
+    userId: string,
+    input: { fullName?: string | null; avatarUrl?: string | null; email?: string | null },
+  ): Promise<void> {
+    const sets: string[] = [];
+    const params: Array<string | null> = [];
+    if (input.fullName !== undefined) {
+      sets.push('full_name = COALESCE(full_name, ?)');
+      params.push(input.fullName);
+    }
+    if (input.avatarUrl !== undefined) {
+      sets.push('avatar_url = COALESCE(avatar_url, ?)');
+      params.push(input.avatarUrl);
+    }
+    if (input.email !== undefined) {
+      sets.push('email = COALESCE(email, ?)');
+      params.push(input.email);
+    }
+    if (sets.length === 0) return;
+    params.push(userId);
+    await this.db.execute(`UPDATE users SET ${sets.join(', ')} WHERE id = ?`, params);
   }
 
   async findRoleIdByCode(code: RoleCode): Promise<string | null> {
@@ -163,6 +266,13 @@ export class AuthRepository {
   async updateFullName(userId: string, fullName: string): Promise<void> {
     await this.db.execute(`UPDATE users SET full_name = ? WHERE id = ?`, [
       fullName,
+      userId,
+    ]);
+  }
+
+  async setPasswordHash(userId: string, passwordHash: string): Promise<void> {
+    await this.db.execute(`UPDATE users SET password_hash = ? WHERE id = ?`, [
+      passwordHash,
       userId,
     ]);
   }
@@ -250,32 +360,44 @@ export class AuthRepository {
   async storeRefreshToken(
     userId: string,
     token: string,
-    expiresAt: Date,
+    expiresInSeconds: number,
     conn?: Pool | PoolConnection,
+    sessionId?: string,
   ): Promise<void> {
     const db = conn ?? this.db;
+    // NOW() on both write and lookup so session timezone cannot expire a fresh token.
     await db.execute(
-      `INSERT INTO refresh_tokens (id, user_id, token_hash, expires_at)
-       VALUES (?, ?, ?, ?)`,
-      [createId(), userId, hashValue(token), expiresAt],
+      `INSERT INTO refresh_tokens (id, user_id, session_id, token_hash, expires_at)
+       VALUES (?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL ? SECOND))`,
+      [createId(), userId, sessionId ?? null, hashValue(token), expiresInSeconds],
     );
   }
 
-  async findValidRefreshToken(
+  async findRefreshTokenForUpdate(
     token: string,
     conn: Pool | PoolConnection,
-  ): Promise<(RowDataPacket & { id: string; user_id: string }) | null> {
+  ): Promise<{ id: string; user_id: string; sessionId: string | null; active: boolean; withinGrace: boolean } | null> {
     const [rows] = await conn.query<RowDataPacket[]>(
-      `SELECT id, user_id
+      `SELECT id, user_id, session_id,
+              (revoked_at IS NULL AND expires_at > NOW()) AS active,
+              (revoked_at IS NOT NULL
+                AND revoked_at >= DATE_SUB(NOW(), INTERVAL ? SECOND)
+                AND expires_at > NOW()) AS within_grace
        FROM refresh_tokens
        WHERE token_hash = ?
-         AND revoked_at IS NULL
-         AND expires_at > CURRENT_TIMESTAMP
        LIMIT 1
        FOR UPDATE`,
-      [hashValue(token)],
+      [REFRESH_REUSE_GRACE_SECONDS, hashValue(token)],
     );
-    return (rows[0] as typeof rows[0] & { id: string; user_id: string }) ?? null;
+    const row = rows[0];
+    if (!row) return null;
+    return {
+      id: row.id as string,
+      user_id: row.user_id as string,
+      sessionId: (row.session_id as string | null) ?? null,
+      active: sqlFlag(row.active),
+      withinGrace: sqlFlag(row.within_grace),
+    };
   }
 
   async revokeRefreshToken(id: string, conn?: Pool | PoolConnection): Promise<void> {
@@ -288,13 +410,71 @@ export class AuthRepository {
 
   async findUserById(userId: string): Promise<UserRecord | null> {
     const [rows] = await this.db.query<RowDataPacket[]>(
-      `SELECT id, phone_country_code, phone, full_name, email, avatar_url, status
+      `SELECT ${USER_SELECT}
        FROM users
        WHERE id = ? AND deleted_at IS NULL
        LIMIT 1`,
       [userId],
     );
     return (rows[0] as UserRecord) ?? null;
+  }
+
+  async recordSecurityEvent(input: {
+    userId?: string | null;
+    phone?: string | null;
+    eventType: string;
+    ipAddress?: string | null;
+    deviceId?: string | null;
+    meta?: Record<string, unknown> | null;
+  }): Promise<void> {
+    await this.db.execute(
+      `INSERT INTO user_security_events
+        (id, user_id, phone, event_type, ip_address, device_id, meta_json)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        createId(),
+        input.userId ?? null,
+        input.phone ?? null,
+        input.eventType,
+        input.ipAddress ?? null,
+        input.deviceId ?? null,
+        input.meta ? JSON.stringify(input.meta) : null,
+      ],
+    );
+  }
+
+  async countSecurityEvents(input: {
+    phone: string;
+    eventType: string;
+    windowMinutes: number;
+  }): Promise<number> {
+    const [rows] = await this.db.query<RowDataPacket[]>(
+      `SELECT COUNT(*) AS total
+       FROM user_security_events
+       WHERE phone = ?
+         AND event_type = ?
+         AND created_at >= DATE_SUB(NOW(), INTERVAL ? MINUTE)`,
+      [input.phone, input.eventType, input.windowMinutes],
+    );
+    return Number(rows[0]?.total ?? 0);
+  }
+
+  async lockUser(userId: string, until: Date): Promise<void> {
+    await this.db.execute(
+      `UPDATE users
+       SET status = 'SECURITY_LOCKED', status_expires_at = ?
+       WHERE id = ? AND status = 'ACTIVE'`,
+      [until, userId],
+    );
+  }
+
+  async clearSecurityLock(userId: string): Promise<void> {
+    await this.db.execute(
+      `UPDATE users
+       SET status = 'ACTIVE', status_expires_at = NULL
+       WHERE id = ? AND status = 'SECURITY_LOCKED'`,
+      [userId],
+    );
   }
 
   async invalidateOlderOtps(phoneCountryCode: string, phone: string): Promise<ResultSetHeader> {

@@ -43,6 +43,7 @@ function emptyCreateProductForm() {
     unitLabel: '1 pc',
     priceRupees: '',
     mrpRupees: '',
+    costPriceRupees: '',
     quantityAvailable: '100',
     imageUrl: null as string | null,
     isAvailable: true,
@@ -68,6 +69,7 @@ interface AdminProductDetail {
     unitLabel: string;
     pricePaise: number;
     mrpPaise: number;
+    costPricePaise?: number | null;
     quantityAvailable: number;
   } | null;
 }
@@ -288,6 +290,11 @@ export function CatalogPage() {
       toast.push('Enter a valid MRP', 'error');
       return;
     }
+    const costPricePaise = rupeesToPaise(createProdForm.costPriceRupees);
+    if (!Number.isFinite(costPricePaise) || costPricePaise < 0) {
+      toast.push('Enter a valid cost price (CP ≥ 0)', 'error');
+      return;
+    }
     setSaving(true);
     try {
       const created = await apiRequest<{ id: string }>('/admin/stores/products', {
@@ -303,6 +310,7 @@ export function CatalogPage() {
           unitLabel: createProdForm.unitLabel.trim() || '1 pc',
           pricePaise,
           mrpPaise,
+          costPricePaise,
           quantityAvailable: Number(createProdForm.quantityAvailable) || 0,
           imageUrl: createProdForm.imageUrl,
           isAvailable: createProdForm.isAvailable,
@@ -792,6 +800,39 @@ export function CatalogPage() {
                   valueRupees={createProdForm.mrpRupees}
                   onChange={(mrpRupees) => setCreateProdForm({ ...createProdForm, mrpRupees })}
                 />
+                <MoneyInput
+                  label="Cost price (CP)"
+                  required
+                  min="0"
+                  valueRupees={createProdForm.costPriceRupees}
+                  onChange={(costPriceRupees) =>
+                    setCreateProdForm({ ...createProdForm, costPriceRupees })
+                  }
+                  hint="Actual cost paid by the business for this product."
+                />
+                {(() => {
+                  const sp = Number(createProdForm.priceRupees);
+                  const cp = Number(createProdForm.costPriceRupees);
+                  if (
+                    !Number.isFinite(sp) ||
+                    !Number.isFinite(cp) ||
+                    createProdForm.costPriceRupees === '' ||
+                    createProdForm.priceRupees === ''
+                  ) {
+                    return null;
+                  }
+                  const profit = sp - cp;
+                  const loss = profit < 0;
+                  return (
+                    <div className={`ba-profit-preview${loss ? ' is-loss' : ''}`}>
+                      <span>Expected gross profit (preview)</span>
+                      <strong>
+                        {loss ? '−' : ''}₹{Math.abs(profit).toFixed(2)}
+                        {loss ? ' loss' : ''}
+                      </strong>
+                    </div>
+                  );
+                })()}
                 <div className="field">
                   <label>Stock qty</label>
                   <input
@@ -887,12 +928,15 @@ export function CatalogPage() {
             {editProduct.defaultVariant ? (
               <p className="muted">
                 SP {formatPaise(editProduct.defaultVariant.pricePaise)} · MRP{' '}
-                {formatPaise(editProduct.defaultVariant.mrpPaise)} · Stock{' '}
-                {editProduct.defaultVariant.quantityAvailable}
+                {formatPaise(editProduct.defaultVariant.mrpPaise)}
+                {editProduct.defaultVariant.costPricePaise != null
+                  ? ` · CP ${formatPaise(editProduct.defaultVariant.costPricePaise)}`
+                  : ' · CP —'}{' '}
+                · Stock {editProduct.defaultVariant.quantityAvailable}
                 {editProduct.storeId ? (
                   <>
                     {' '}
-                    · <Link to={`/stores/${editProduct.storeId}`}>Edit pricing/stock</Link>
+                    · <Link to={`/stores/${editProduct.storeId}`}>Edit pricing / CP / stock</Link>
                   </>
                 ) : null}
               </p>

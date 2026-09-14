@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../core/errors/app_failure.dart';
 import '../../../../core/i18n/i18n_providers.dart';
@@ -11,15 +12,62 @@ import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/state_widgets.dart';
 import '../../../../shared/widgets/status_chip.dart';
 import '../../domain/delivery_models.dart';
+import '../../domain/partner_day.dart';
 import '../delivery_view_models.dart';
+import '../widgets/partner_date_filter.dart';
 
-class DeliveryHomeScreen extends ConsumerWidget {
+final _inr = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
+
+String formatCollectedRupees(int paise) => _inr.format((paise / 100).round());
+
+class DeliveryHomeScreen extends ConsumerStatefulWidget {
   const DeliveryHomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final statsAsync = ref.watch(deliveryStatsProvider);
-    final activeJobs = ref.watch(deliveryJobsListProvider(DeliveryJobsTab.active));
+  ConsumerState<DeliveryHomeScreen> createState() => _DeliveryHomeScreenState();
+}
+
+class _DeliveryHomeScreenState extends ConsumerState<DeliveryHomeScreen> {
+  late String _selectedDate = partnerToday();
+
+  void _setDate(String date) {
+    final next = parsePartnerDate(date);
+    if (next == null) return;
+    setState(() => _selectedDate = formatPartnerDate(next));
+  }
+
+  Future<void> _refresh() async {
+    await ref.read(deliveryStatsProvider(_selectedDate).notifier).refresh();
+    await Future.wait([
+      ref
+          .read(deliveryJobsListProvider(const DeliveryJobsQuery(DeliveryJobsTab.active)).notifier)
+          .refresh(),
+      ref
+          .read(
+            deliveryJobsListProvider(const DeliveryJobsQuery(DeliveryJobsTab.available)).notifier,
+          )
+          .refresh(),
+    ]);
+  }
+
+  void _openAvailableJobs() {
+    ref.invalidate(
+      deliveryJobsListProvider(const DeliveryJobsQuery(DeliveryJobsTab.available)),
+    );
+    context.go('/partner/jobs?tab=available');
+  }
+
+  void _openActiveJobs() {
+    ref.invalidate(
+      deliveryJobsListProvider(const DeliveryJobsQuery(DeliveryJobsTab.active)),
+    );
+    context.go('/partner/jobs?tab=active');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final statsAsync = ref.watch(deliveryStatsProvider(_selectedDate));
+    final activeJobs = ref.watch(deliveryJobsListProvider(const DeliveryJobsQuery(DeliveryJobsTab.active)));
     final currentJob = activeJobs.items.isNotEmpty ? activeJobs.items.first : null;
 
     return Scaffold(
@@ -29,20 +77,14 @@ class DeliveryHomeScreen extends ConsumerWidget {
         actions: [
           IconButton(
             tooltip: ref.t('common.refresh'),
-            onPressed: () {
-              ref.read(deliveryStatsProvider.notifier).refresh();
-              ref.read(deliveryJobsListProvider(DeliveryJobsTab.active).notifier).refresh();
-            },
+            onPressed: _refresh,
             icon: const Icon(Icons.refresh),
           ),
         ],
       ),
       body: RefreshIndicator(
         color: DeliveryColors.primary,
-        onRefresh: () async {
-          await ref.read(deliveryStatsProvider.notifier).refresh();
-          await ref.read(deliveryJobsListProvider(DeliveryJobsTab.active).notifier).refresh();
-        },
+        onRefresh: _refresh,
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(DeliverySpacing.marginMobile),
@@ -51,60 +93,147 @@ class DeliveryHomeScreen extends ConsumerWidget {
               ref.t('delivery.greeting'),
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     color: DeliveryColors.deepSlate,
-                  ),
-            ),
-            const SizedBox(height: DeliverySpacing.xs),
-            Text(
-              ref.t('delivery.dashboard_hint'),
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: DeliveryColors.onSurfaceVariant,
+                    fontWeight: FontWeight.w700,
                   ),
             ),
             if (currentJob != null) ...[
               const SizedBox(height: DeliverySpacing.lg),
-              Text(
-                ref.t('delivery.current_delivery'),
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: DeliverySpacing.sm),
               _CurrentDeliveryCard(
                 job: currentJob,
                 onView: () => context.push('/partner/jobs/${currentJob.detailRouteId}'),
               ),
             ],
             const SizedBox(height: DeliverySpacing.lg),
+            PartnerDateFilter(
+              selectedDate: _selectedDate,
+              onChanged: _setDate,
+            ),
+            const SizedBox(height: DeliverySpacing.md),
             statsAsync.when(
-              loading: () => const _StatsSkeleton(),
+              loading: () => const _DashboardSkeleton(),
               error: (error, _) => ErrorState(
-                message: error is AppFailure ? error.message : 'delivery.could_not_load_stats',
-                onRetry: () => ref.read(deliveryStatsProvider.notifier).refresh(),
+                message: error is AppFailure ? error.message : ref.t('delivery.could_not_load_stats'),
+                onRetry: () => ref.read(deliveryStatsProvider(_selectedDate).notifier).refresh(),
               ),
-              data: (stats) => _StatsGrid(stats: stats),
-            ),
-            const SizedBox(height: DeliverySpacing.xl),
-            Text(ref.t('delivery.quick_actions'), style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: DeliverySpacing.sm),
-            _ActionTile(
-              icon: Icons.inventory_2_outlined,
-              title: ref.t('delivery.pending_orders'),
-              subtitle: ref.t('delivery.pending_hint'),
-              onTap: () => context.go('/partner/jobs?tab=available'),
-            ),
-            _ActionTile(
-              icon: Icons.local_shipping_outlined,
-              title: ref.t('delivery.my_active'),
-              subtitle: ref.t('delivery.my_active_hint'),
-              onTap: () => context.go('/partner/jobs?tab=active'),
-            ),
-            _ActionTile(
-              icon: Icons.check_circle_outline,
-              title: ref.t('delivery.completed_today'),
-              subtitle: ref.t('delivery.completed_hint'),
-              onTap: () => context.go('/partner/history'),
+              data: (stats) => _DaySummary(
+                stats: stats,
+                onDelivered: () => context.go('/partner/history?date=$_selectedDate'),
+                onReturns: () => context.go('/partner/history?date=$_selectedDate'),
+                onAvailable: _openAvailableJobs,
+                onActive: _openActiveJobs,
+              ),
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _DaySummary extends StatelessWidget {
+  const _DaySummary({
+    required this.stats,
+    required this.onDelivered,
+    required this.onReturns,
+    required this.onAvailable,
+    required this.onActive,
+  });
+
+  final DeliveryStats stats;
+  final VoidCallback onDelivered;
+  final VoidCallback onReturns;
+  final VoidCallback onAvailable;
+  final VoidCallback onActive;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _MoneyCard(
+                label: context.t('delivery.cash_collected'),
+                value: formatCollectedRupees(stats.cashCollectedPaise),
+                icon: Icons.payments_outlined,
+                color: DeliveryColors.primary,
+              ),
+            ),
+            const SizedBox(width: DeliverySpacing.sm),
+            Expanded(
+              child: _MoneyCard(
+                label: context.t('delivery.upi_collected'),
+                value: formatCollectedRupees(stats.upiCollectedPaise),
+                icon: Icons.qr_code_2,
+                color: DeliveryColors.secondary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: DeliverySpacing.sm),
+        Row(
+          children: [
+            Expanded(
+              child: _CountCard(
+                label: context.t('delivery.orders_delivered'),
+                value: stats.ordersDelivered.toString(),
+                icon: Icons.check_circle_outline,
+                color: DeliveryColors.primary,
+                onTap: onDelivered,
+              ),
+            ),
+            const SizedBox(width: DeliverySpacing.sm),
+            Expanded(
+              child: _CountCard(
+                label: context.t('delivery.cancelled'),
+                value: stats.cancelled.toString(),
+                icon: Icons.cancel_outlined,
+                color: DeliveryColors.error,
+              ),
+            ),
+            const SizedBox(width: DeliverySpacing.sm),
+            Expanded(
+              child: _CountCard(
+                label: context.t('delivery.returns'),
+                value: stats.returns.toString(),
+                icon: Icons.assignment_return_outlined,
+                color: DeliveryColors.tertiary,
+                onTap: onReturns,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: DeliverySpacing.lg),
+        Text(
+          context.t('delivery.right_now'),
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: DeliverySpacing.sm),
+        Row(
+          children: [
+            Expanded(
+              child: _CountCard(
+                label: context.t('delivery.available'),
+                value: stats.available.toString(),
+                icon: Icons.inventory_2_outlined,
+                color: DeliveryColors.primary,
+                onTap: onAvailable,
+              ),
+            ),
+            const SizedBox(width: DeliverySpacing.sm),
+            Expanded(
+              child: _CountCard(
+                label: context.t('delivery.active'),
+                value: stats.active.toString(),
+                icon: Icons.local_shipping_outlined,
+                color: DeliveryColors.secondary,
+                onTap: onActive,
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
@@ -169,48 +298,8 @@ class _CurrentDeliveryCard extends StatelessWidget {
   }
 }
 
-class _StatsGrid extends StatelessWidget {
-  const _StatsGrid({required this.stats});
-
-  final DeliveryStats stats;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _StatCard(
-            label: context.t('delivery.available'),
-            value: stats.available.toString(),
-            icon: Icons.inventory_2_outlined,
-            color: DeliveryColors.primary,
-          ),
-        ),
-        const SizedBox(width: DeliverySpacing.sm),
-        Expanded(
-          child: _StatCard(
-            label: context.t('delivery.active'),
-            value: stats.active.toString(),
-            icon: Icons.local_shipping_outlined,
-            color: DeliveryColors.secondary,
-          ),
-        ),
-        const SizedBox(width: DeliverySpacing.sm),
-        Expanded(
-          child: _StatCard(
-            label: context.t('delivery.done_today'),
-            value: stats.completedToday.toString(),
-            icon: Icons.check_circle_outline,
-            color: DeliveryColors.tertiary,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  const _StatCard({
+class _MoneyCard extends StatelessWidget {
+  const _MoneyCard({
     required this.label,
     required this.value,
     required this.icon,
@@ -238,7 +327,9 @@ class _StatCard extends StatelessWidget {
           const SizedBox(height: DeliverySpacing.sm),
           Text(
             value,
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   color: DeliveryColors.deepSlate,
                   fontWeight: FontWeight.w700,
                 ),
@@ -246,6 +337,8 @@ class _StatCard extends StatelessWidget {
           const SizedBox(height: DeliverySpacing.xs),
           Text(
             label,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
                   color: DeliveryColors.onSurfaceVariant,
                 ),
@@ -256,63 +349,96 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-class _StatsSkeleton extends StatelessWidget {
-  const _StatsSkeleton();
+class _CountCard extends StatelessWidget {
+  const _CountCard({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+    this.onTap,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return const Row(
-      children: [
-        Expanded(child: SkeletonBox(height: 96, borderRadius: 16)),
-        SizedBox(width: DeliverySpacing.sm),
-        Expanded(child: SkeletonBox(height: 96, borderRadius: 16)),
-        SizedBox(width: DeliverySpacing.sm),
-        Expanded(child: SkeletonBox(height: 96, borderRadius: 16)),
-      ],
+    final card = Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(DeliverySpacing.md),
+      decoration: BoxDecoration(
+        color: DeliveryColors.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(DeliveryRadius.lg),
+        border: Border.all(color: DeliveryColors.cardBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(height: DeliverySpacing.sm),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  color: DeliveryColors.deepSlate,
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
+          const SizedBox(height: DeliverySpacing.xs),
+          Text(
+            label,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: DeliveryColors.onSurfaceVariant,
+                ),
+          ),
+        ],
+      ),
+    );
+
+    if (onTap == null) return card;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(DeliveryRadius.lg),
+        child: card,
+      ),
     );
   }
 }
 
-class _ActionTile extends StatelessWidget {
-  const _ActionTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
+class _DashboardSkeleton extends StatelessWidget {
+  const _DashboardSkeleton();
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: DeliverySpacing.sm),
-      child: Material(
-        color: DeliveryColors.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(DeliveryRadius.md),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(DeliveryRadius.md),
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(DeliveryRadius.md),
-              border: Border.all(color: DeliveryColors.cardBorder),
-            ),
-            child: ListTile(
-              leading: CircleAvatar(
-                backgroundColor: DeliveryColors.primaryContainer.withValues(alpha: 0.15),
-                child: Icon(icon, color: DeliveryColors.primary),
-              ),
-              title: Text(title),
-              subtitle: Text(subtitle),
-              trailing: const Icon(Icons.chevron_right),
-            ),
-          ),
+    return const Column(
+      children: [
+        Row(
+          children: [
+            Expanded(child: SkeletonBox(height: 112, borderRadius: 16)),
+            SizedBox(width: DeliverySpacing.sm),
+            Expanded(child: SkeletonBox(height: 112, borderRadius: 16)),
+          ],
         ),
-      ),
+        SizedBox(height: DeliverySpacing.sm),
+        Row(
+          children: [
+            Expanded(child: SkeletonBox(height: 104, borderRadius: 16)),
+            SizedBox(width: DeliverySpacing.sm),
+            Expanded(child: SkeletonBox(height: 104, borderRadius: 16)),
+            SizedBox(width: DeliverySpacing.sm),
+            Expanded(child: SkeletonBox(height: 104, borderRadius: 16)),
+          ],
+        ),
+      ],
     );
   }
 }

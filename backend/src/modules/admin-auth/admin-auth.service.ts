@@ -1,29 +1,23 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import type { PoolConnection } from 'mysql2/promise';
 import { env } from '../../config/env.js';
+import {
+  parseExpiryToSeconds,
+  refreshTokenDecision,
+} from '../../common/auth/token-session.js';
+import { withTransaction } from '../../common/database/pool.js';
 import {
   ForbiddenError,
   UnauthorizedError,
   ValidationError,
 } from '../../common/errors/app-error.js';
+import { createAdminSession } from '../../common/auth/session-store.js';
+import { loadAdminAccess } from '../../common/auth/admin-permissions.js';
+import { getSessionPolicy } from '../../common/config/session-policy.js';
+import type { ClientContext } from '../../common/http/client-context.js';
 import { AdminAuthRepository } from './admin-auth.repository.js';
 import type { AdminLoginInput } from './admin-auth.schema.js';
-
-function parseExpiryToDate(expiresIn: string): Date {
-  const match = /^(\d+)([smhd])$/.exec(expiresIn);
-  if (!match) {
-    return new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-  }
-  const amount = Number(match[1]);
-  const unit = match[2];
-  const multipliers: Record<string, number> = {
-    s: 1000,
-    m: 60 * 1000,
-    h: 60 * 60 * 1000,
-    d: 24 * 60 * 60 * 1000,
-  };
-  return new Date(Date.now() + amount * (multipliers[unit] ?? multipliers.d));
-}
 
 function mapAdminUser(row: {
   id: string;
@@ -41,7 +35,7 @@ function mapAdminUser(row: {
 export class AdminAuthService {
   constructor(private readonly repo = new AdminAuthRepository()) {}
 
-  async login(input: AdminLoginInput) {
+  async login(input: AdminLoginInput, client: ClientContext) {
     const email = input.email.trim().toLowerCase();
     const admin = await this.repo.findByEmail(email);
     if (!admin) {
@@ -60,32 +54,55 @@ export class AdminAuthService {
     }
 
     await this.repo.touchLogin(admin.id);
-    const tokens = await this.issueTokens(admin.id, admin.email);
+    const policy = await getSessionPolicy();
+    const sessionId = await createAdminSession({
+      adminUserId: admin.id,
+      client,
+      absoluteMinutes: policy.adminAbsoluteTimeoutMinutes,
+    });
+    const tokens = await this.issueTokens(admin.id, admin.email, undefined, sessionId);
 
     return {
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
-      user: mapAdminUser(admin),
+      user: await this.mapWithAccess(admin),
     };
   }
 
-  async refresh(refreshToken: string) {
-    const stored = await this.repo.findValidRefreshToken(refreshToken);
-    if (!stored) {
-      throw new UnauthorizedError('Invalid refresh token');
-    }
+  async refresh(refreshToken: string, client: ClientContext) {
+    return withTransaction(async (conn) => {
+      const stored = await this.repo.findRefreshTokenForUpdate(refreshToken, conn);
+      const decision = refreshTokenDecision(stored);
+      if (!stored || decision === 'reject') {
+        throw new UnauthorizedError('Invalid refresh token', 'REFRESH_INVALID');
+      }
 
-    const admin = await this.repo.findById(stored.admin_user_id);
-    if (!admin || admin.status !== 'ACTIVE') {
-      throw new UnauthorizedError('Admin not available');
-    }
+      const admin = await this.repo.findById(stored.admin_user_id);
+      if (!admin || admin.status !== 'ACTIVE') {
+        throw new UnauthorizedError('Admin not available', 'REFRESH_INVALID');
+      }
 
-    await this.repo.revokeRefreshToken(stored.id);
-    const tokens = await this.issueTokens(admin.id, admin.email);
-    return {
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken,
-    };
+      if (decision === 'rotate') {
+        await this.repo.revokeRefreshToken(stored.id, conn);
+      }
+
+      const policy = await getSessionPolicy();
+      const sessionId =
+        stored.sessionId ??
+        (await createAdminSession(
+          {
+            adminUserId: admin.id,
+            client,
+            absoluteMinutes: policy.adminAbsoluteTimeoutMinutes,
+          },
+          conn,
+        ));
+      const tokens = await this.issueTokens(admin.id, admin.email, conn, sessionId);
+      return {
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+      };
+    });
   }
 
   async me(adminUserId: string) {
@@ -93,7 +110,16 @@ export class AdminAuthService {
     if (!admin || admin.status !== 'ACTIVE') {
       throw new UnauthorizedError();
     }
-    return mapAdminUser(admin);
+    return this.mapWithAccess(admin);
+  }
+
+  private async mapWithAccess(admin: { id: string; email: string; full_name: string | null }) {
+    const access = await loadAdminAccess(admin.id);
+    return {
+      ...mapAdminUser(admin),
+      consoleRoles: access.roles,
+      permissions: [...access.permissions],
+    };
   }
 
   async hashPassword(password: string): Promise<string> {
@@ -103,7 +129,12 @@ export class AdminAuthService {
     return bcrypt.hash(password, 12);
   }
 
-  private async issueTokens(adminUserId: string, email: string) {
+  private async issueTokens(
+    adminUserId: string,
+    email: string,
+    conn?: PoolConnection,
+    sessionId?: string,
+  ) {
     const accessToken = jwt.sign(
       {
         sub: adminUserId,
@@ -112,6 +143,7 @@ export class AdminAuthService {
         roles: ['ADMIN'],
         type: 'access',
         principal: 'admin',
+        ...(sessionId ? { sid: sessionId } : {}),
       },
       env.JWT_ACCESS_SECRET,
       { expiresIn: env.JWT_ACCESS_EXPIRES_IN as jwt.SignOptions['expiresIn'] },
@@ -130,7 +162,9 @@ export class AdminAuthService {
     await this.repo.storeRefreshToken(
       adminUserId,
       refreshToken,
-      parseExpiryToDate(env.JWT_REFRESH_EXPIRES_IN),
+      parseExpiryToSeconds(env.JWT_REFRESH_EXPIRES_IN),
+      conn,
+      sessionId,
     );
 
     return { accessToken, refreshToken };

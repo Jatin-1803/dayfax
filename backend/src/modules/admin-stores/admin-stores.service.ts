@@ -83,6 +83,8 @@ export class AdminStoresService {
       unitLabel: (row.unit_label as string | null) ?? null,
       pricePaise: Number(row.price_paise ?? 0),
       mrpPaise: Number(row.mrp_paise ?? 0),
+      costPricePaise:
+        row.cost_price_paise == null ? null : Number(row.cost_price_paise),
       quantityAvailable: Number(row.quantity_available ?? 0),
     };
   }
@@ -145,6 +147,7 @@ export class AdminStoresService {
           unitLabel: input.unitLabel ?? '1 pc',
           pricePaise: input.pricePaise,
           mrpPaise,
+          costPricePaise: input.costPricePaise,
           quantityAvailable: input.quantityAvailable ?? 100,
           isAvailable: input.isAvailable ?? true,
           sku,

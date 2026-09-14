@@ -59,13 +59,13 @@ final i18nBundleProvider =
 
 /// Current locale code for API `lang` query (defaults to en while loading).
 final appLangCodeProvider = Provider<String>((ref) {
-  return ref.watch(localeControllerProvider).valueOrNull?.code ?? AppLocale.en.code;
+  return ref.watch(localeControllerProvider).value?.code ?? AppLocale.en.code;
 });
 
 extension I18nContextX on BuildContext {
   String t(String key, [Map<String, String>? params]) {
     final container = ProviderScope.containerOf(this, listen: false);
-    final bundle = container.read(i18nBundleProvider).valueOrNull;
+    final bundle = container.read(i18nBundleProvider).value;
     if (bundle == null) return key;
     final value = bundle.translate(key, params);
     if (value == key) {
@@ -78,13 +78,13 @@ extension I18nContextX on BuildContext {
 
 extension I18nRefX on WidgetRef {
   String t(String key, [Map<String, String>? params]) {
-    final bundle = watch(i18nBundleProvider).valueOrNull;
+    final bundle = watch(i18nBundleProvider).value;
     if (bundle == null) return key;
     return bundle.translate(key, params);
   }
 
   String tr(String key, [Map<String, String>? params]) {
-    final bundle = read(i18nBundleProvider).valueOrNull;
+    final bundle = read(i18nBundleProvider).value;
     if (bundle == null) return key;
     return bundle.translate(key, params);
   }
