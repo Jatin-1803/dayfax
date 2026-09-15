@@ -3,9 +3,9 @@ import 'dart:math';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-/// Keep in sync with `pubspec.yaml` `version` (`1.0.1+2`).
-const appVersionName = '1.0.1';
-const appBuildNumber = '2';
+/// Keep in sync with `pubspec.yaml` `version` (`1.0.2+3`).
+const appVersionName = '1.0.2';
+const appBuildNumber = '3';
 
 class ClientHeaders {
   ClientHeaders({FlutterSecureStorage? storage})

@@ -76,6 +76,12 @@ class ProfileScreen extends ConsumerWidget {
               hasPassword: userAsync.value?.hasPassword == true,
             ),
           ),
+          _ProfileTile(
+            icon: Icons.person_off_outlined,
+            title: ref.t('about.delete_account'),
+            subtitle: ref.t('about.delete_account_subtitle'),
+            onTap: () => context.push('/about/delete-account'),
+          ),
           const SizedBox(height: CustomerSpacing.lg),
           Text(ref.t('common.language'), style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: CustomerSpacing.sm),
@@ -142,11 +148,13 @@ class ProfileScreen extends ConsumerWidget {
             icon: Icons.help_outline,
             title: ref.t('profile.help'),
             subtitle: ref.t('profile.help_subtitle'),
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(ref.t('profile.help_snackbar'))),
-              );
-            },
+            onTap: () => context.push('/about/contact'),
+          ),
+          _ProfileTile(
+            icon: Icons.info_outline,
+            title: ref.t('about.title'),
+            subtitle: ref.t('about.profile_subtitle'),
+            onTap: () => context.push('/about'),
           ),
           const SizedBox(height: CustomerSpacing.lg),
           _ProfileTile(

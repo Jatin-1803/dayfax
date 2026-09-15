@@ -26,6 +26,13 @@ import '../../features/delivery/presentation/screens/partner_shell.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/home/presentation/screens/main_shell.dart';
 import '../../features/home/presentation/screens/profile_screen.dart';
+import '../../features/about/presentation/screens/about_app_screen.dart';
+import '../../features/about/presentation/screens/about_screen.dart';
+import '../../features/about/presentation/screens/contact_support_screen.dart';
+import '../../features/about/presentation/screens/delete_account_screen.dart';
+import '../../features/about/presentation/screens/legal_document_screen.dart';
+import '../../features/about/presentation/screens/licenses_screen.dart';
+import '../../features/about/presentation/widgets/legal_document_view.dart';
 import '../../features/notifications/presentation/screens/notifications_screen.dart';
 import '../../features/orders/presentation/screens/checkout_screen.dart';
 import '../../features/orders/presentation/screens/order_confirmed_screen.dart';
@@ -70,6 +77,10 @@ bool _isAuthRoute(String loc) {
 
 bool _isPartnerAuthRoute(String loc) {
   return loc == '/partner/login' || loc == '/partner/otp';
+}
+
+bool _isPublicAboutRoute(String loc) {
+  return loc == '/about' || loc.startsWith('/about/');
 }
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -118,7 +129,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         return '/login/create-password';
       }
 
-      if (!isAuthenticated && !loggingIn) {
+      if (!isAuthenticated && !loggingIn && !_isPublicAboutRoute(loc)) {
         return '/login';
       }
 
@@ -126,7 +137,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         return homePathForRole(role);
       }
 
-      if (isAuthenticated && role.isDeliveryPartner && !onPartner && !loggingIn) {
+      if (isAuthenticated &&
+          role.isDeliveryPartner &&
+          !onPartner &&
+          !loggingIn &&
+          !_isPublicAboutRoute(loc)) {
         return '/partner/home';
       }
       if (isAuthenticated && role.isCustomer && onPartner && !partnerAuth) {
@@ -177,6 +192,41 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final phone = state.extra as String? ?? '';
           return PartnerOtpScreen(phone: phone);
         },
+      ),
+      GoRoute(
+        path: '/about',
+        builder: (context, state) => const AboutScreen(),
+        routes: [
+          GoRoute(
+            path: 'app',
+            builder: (context, state) => const AboutAppScreen(),
+          ),
+          GoRoute(
+            path: 'contact',
+            builder: (context, state) => const ContactSupportScreen(),
+          ),
+          GoRoute(
+            path: 'licenses',
+            builder: (context, state) => const LicensesScreen(),
+          ),
+          GoRoute(
+            path: 'delete-account',
+            builder: (context, state) => const DeleteAccountScreen(),
+          ),
+          GoRoute(
+            path: ':docId',
+            builder: (context, state) {
+              final id = parseLegalDocumentId(state.pathParameters['docId'] ?? '');
+              if (id == null) {
+                return Scaffold(
+                  appBar: AppBar(),
+                  body: Center(child: Text(context.t('nav.page_not_found'))),
+                );
+              }
+              return LegalDocumentScreen(documentId: id);
+            },
+          ),
+        ],
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {

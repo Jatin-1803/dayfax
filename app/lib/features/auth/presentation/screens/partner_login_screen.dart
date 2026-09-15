@@ -146,13 +146,50 @@ class _PartnerLoginScreenState extends ConsumerState<PartnerLoginScreen> {
                 ),
               ),
               const SizedBox(height: DeliverySpacing.md),
-              Text(
-                ref.t('auth.terms'),
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: DeliveryColors.onSurfaceVariant,
-                      fontWeight: FontWeight.w400,
+              Wrap(
+                alignment: WrapAlignment.center,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  Text(
+                    ref.t('auth.terms_prefix'),
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                          color: DeliveryColors.onSurfaceVariant,
+                          fontWeight: FontWeight.w400,
+                        ),
+                  ),
+                  TextButton(
+                    onPressed: () => context.push('/about/terms'),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                textAlign: TextAlign.center,
+                    child: Text(ref.t('auth.terms_link')),
+                  ),
+                  Text(
+                    ref.t('auth.terms_and'),
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                          color: DeliveryColors.onSurfaceVariant,
+                          fontWeight: FontWeight.w400,
+                        ),
+                  ),
+                  TextButton(
+                    onPressed: () => context.push('/about/privacy'),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: Text(ref.t('auth.privacy_link')),
+                  ),
+                  Text(
+                    ref.t('auth.terms_suffix'),
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                          color: DeliveryColors.onSurfaceVariant,
+                          fontWeight: FontWeight.w400,
+                        ),
+                  ),
+                ],
               ),
                 ],
               ),

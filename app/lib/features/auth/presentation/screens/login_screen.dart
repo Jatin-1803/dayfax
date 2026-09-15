@@ -211,12 +211,47 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   : _continueWithGoogle,
                             ),
                             const SizedBox(height: CustomerSpacing.md),
-                            Text(
-                              ref.t('auth.terms'),
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: CustomerColors.onSurfaceVariant,
+                            Wrap(
+                              alignment: WrapAlignment.center,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                Text(
+                                  ref.t('auth.terms_prefix'),
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                        color: CustomerColors.onSurfaceVariant,
+                                      ),
+                                ),
+                                TextButton(
+                                  onPressed: () => context.push('/about/terms'),
+                                  style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                                    minimumSize: Size.zero,
+                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                   ),
-                              textAlign: TextAlign.center,
+                                  child: Text(ref.t('auth.terms_link')),
+                                ),
+                                Text(
+                                  ref.t('auth.terms_and'),
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                        color: CustomerColors.onSurfaceVariant,
+                                      ),
+                                ),
+                                TextButton(
+                                  onPressed: () => context.push('/about/privacy'),
+                                  style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                                    minimumSize: Size.zero,
+                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  child: Text(ref.t('auth.privacy_link')),
+                                ),
+                                Text(
+                                  ref.t('auth.terms_suffix'),
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                        color: CustomerColors.onSurfaceVariant,
+                                      ),
+                                ),
+                              ],
                             ),
                             const SizedBox(height: CustomerSpacing.md),
                             Center(

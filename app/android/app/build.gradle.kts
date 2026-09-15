@@ -37,6 +37,8 @@ android {
         multiDexEnabled = true
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        // Debug/local may hit http://10.0.2.2; Play release uses HTTPS only.
+        manifestPlaceholders["usesCleartextTraffic"] = "false"
     }
 
     // Release APK/AAB is signed with upload-keystore.jks (see key.properties).
@@ -56,12 +58,16 @@ android {
     }
 
     buildTypes {
+        debug {
+            manifestPlaceholders["usesCleartextTraffic"] = "true"
+        }
         release {
             signingConfig = if (keystorePropertiesFile.exists()) {
                 signingConfigs.getByName("release")
             } else {
                 signingConfigs.getByName("debug")
             }
+            manifestPlaceholders["usesCleartextTraffic"] = "false"
         }
     }
 }
