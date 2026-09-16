@@ -536,9 +536,9 @@ abstract final class LegalCatalog {
         paragraphs: [
           L10nText(
             en:
-                'There is currently no fully automated in-app account deletion button. To request deletion of your DayFax account, email ${AboutConfig.supportEmail} from your registered contact details (include your phone number or account email). You can also start this from Profile → About → Contact & Support, or Profile → Delete account.',
+                'There is currently no fully automated in-app account deletion button. To request deletion of your DayFax account, email ${AboutConfig.supportEmail} from your registered contact details (include your phone number or account email), or visit ${AboutConfig.deleteAccountUrl}. You can also start this from Profile → Delete account.',
             hi:
-                'अभी ऐप में पूर्ण स्वचालित खाता-हटाने का बटन नहीं है। खाता हटाने का अनुरोध ${AboutConfig.supportEmail} पर अपने पंजीकृत संपर्क से ईमेल करें (फ़ोन या खाता ईमेल शामिल करें)। आप प्रोफ़ाइल → अबाउट → संपर्क और सहायता, या प्रोफ़ाइल → खाता हटाएँ से भी शुरू कर सकते हैं।',
+                'अभी ऐप में पूर्ण स्वचालित खाता-हटाने का बटन नहीं है। खाता हटाने का अनुरोध ${AboutConfig.supportEmail} पर अपने पंजीकृत संपर्क से ईमेल करें (फ़ोन या खाता ईमेल शामिल करें), या ${AboutConfig.deleteAccountUrl} देखें। आप प्रोफ़ाइल → खाता हटाएँ से भी शुरू कर सकते हैं।',
           ),
           const L10nText(
             en:

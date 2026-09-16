@@ -213,7 +213,8 @@ img {
   margin: 0 0 0.85rem;
 }
 
-.legal ul {
+.legal ul,
+.legal ol {
   margin: 0 0 0.85rem;
   padding-left: 1.2rem;
 }
@@ -224,6 +225,25 @@ img {
 
 .legal li::marker {
   color: var(--primary-bright);
+}
+
+.cta-mail {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin: 0.25rem 0 0.5rem;
+  padding: 0.65rem 1.15rem;
+  border-radius: 0.75rem;
+  background: var(--primary);
+  color: var(--on-primary);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.cta-mail:hover {
+  background: #005236;
+  color: var(--on-primary);
 }
 
 @media (min-width: 640px) {

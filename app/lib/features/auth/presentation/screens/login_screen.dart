@@ -253,18 +253,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: CustomerSpacing.md),
-                            Center(
-                              child: TextButton(
-                                onPressed: () => context.push('/partner/login'),
-                                child: Text(
-                                  ref.t('delivery.auth.partner_entry'),
-                                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                                        color: CustomerColors.primary,
-                                      ),
-                                ),
-                              ),
-                            ),
                           ],
                         ),
                       ],

@@ -22,6 +22,7 @@ abstract final class AboutConfig {
   static const String websiteUrl = 'https://dayfax.in';
   static const String privacyPolicyUrl = 'https://dayfax.in/privacy';
   static const String termsUrl = 'https://dayfax.in/terms';
+  static const String deleteAccountUrl = 'https://dayfax.in/delete-account';
 
   /// Optional support phone. Empty = hide Call Support.
   static const String supportPhone = '';
@@ -52,6 +53,7 @@ abstract final class AboutConfig {
   static Uri get websiteUri => Uri.parse(websiteUrl);
   static Uri get privacyUri => Uri.parse(privacyPolicyUrl);
   static Uri get termsUri => Uri.parse(termsUrl);
+  static Uri get deleteAccountUri => Uri.parse(deleteAccountUrl);
 
   static Uri mailtoSupport({String? subject, String? body}) {
     final params = <String, String>{};
