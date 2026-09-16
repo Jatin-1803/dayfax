@@ -111,6 +111,34 @@ export class AccountLifecycleService {
     });
   }
 
+  async softDelete(userId: string, adminId: string, reason: string, requestId?: string) {
+    const user = await this.requireUser(userId, true);
+    await getPool().execute(
+      `UPDATE users
+       SET deleted_at = CURRENT_TIMESTAMP,
+           status = 'INACTIVE',
+           status_expires_at = NULL,
+           sessions_valid_after = CURRENT_TIMESTAMP,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = ? AND deleted_at IS NULL`,
+      [userId],
+    );
+    await revokeUserSessions({ userId, reason: 'account_deleted' });
+    await writeAudit({
+      actorType: 'admin',
+      actorId: adminId,
+      action: 'USER_SOFT_DELETED',
+      module: 'users',
+      entityType: 'user',
+      entityId: userId,
+      oldValue: { status: user.status, deletedAt: null },
+      newValue: { status: 'INACTIVE', deletedAt: 'now' },
+      reason,
+      requestId,
+    });
+    return { id: userId, deleted: true };
+  }
+
   async restore(userId: string, adminId: string, reason: string, requestId?: string) {
     const [rows] = await getPool().query<RowDataPacket[]>(
       `SELECT id, status, deleted_at FROM users WHERE id = ? LIMIT 1`,

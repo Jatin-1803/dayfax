@@ -143,6 +143,35 @@ export class AdminUsersController {
     }
   };
 
+  softDelete = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const data = await this.service.softDelete(
+        String(req.params.id),
+        req.user!.id,
+        req.body.reason,
+        req.requestId,
+      );
+      sendSuccess(res, data, 'User deleted');
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  resetPassword = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const data = await this.service.adminResetPassword(
+        String(req.params.id),
+        req.user!.id,
+        req.body,
+        req.requestId,
+        req.ip,
+      );
+      sendSuccess(res, data, 'Password updated');
+    } catch (error) {
+      next(error);
+    }
+  };
+
   forceLogout = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const data = await this.lifecycle.forceLogout(String(req.params.id), req.user!.id, req.body.reason, req.requestId);

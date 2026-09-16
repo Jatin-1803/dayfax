@@ -2,7 +2,15 @@ import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { apiRequest, ApiError } from '../api/client';
 import type { AdminUser, PaginationMeta, RoleCode } from '../api/types';
+import { UserManageModal } from '../components/UserManageModal';
 import { useToast } from '../components/Toast';
+
+function statusBadgeClass(status: string): string {
+  if (status === 'ACTIVE') return 'badge';
+  if (status === 'SUSPENDED') return 'badge badge-warn';
+  if (status === 'BANNED' || status === 'BLOCKED') return 'badge badge-danger';
+  return 'badge badge-muted';
+}
 
 export function PartnersPage() {
   const toast = useToast();
@@ -15,6 +23,8 @@ export function PartnersPage() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selected, setSelected] = useState<AdminUser | null>(null);
+  const [openingId, setOpeningId] = useState<string | null>(null);
 
   async function load(nextPage = page, search = q) {
     setLoading(true);
@@ -88,6 +98,18 @@ export function PartnersPage() {
     }
   }
 
+  async function openManage(u: AdminUser) {
+    setOpeningId(u.id);
+    try {
+      const detail = await apiRequest<AdminUser>(`/admin/users/${u.id}`);
+      setSelected(detail);
+    } catch (err) {
+      toast.push(err instanceof ApiError ? err.message : 'Could not load partner', 'error');
+    } finally {
+      setOpeningId(null);
+    }
+  }
+
   return (
     <div>
       <div className="page-header">
@@ -148,7 +170,7 @@ export function PartnersPage() {
               <tr>
                 <th>Partner</th>
                 <th>Status</th>
-                <th>ID</th>
+                <th />
               </tr>
             </thead>
             <tbody>
@@ -161,16 +183,26 @@ export function PartnersPage() {
                     </div>
                   </td>
                   <td>
-                    <span className="badge">{u.status}</span>
+                    <span className={statusBadgeClass(u.status)}>{u.status}</span>
                   </td>
                   <td>
-                    <button
-                      type="button"
-                      className="btn btn-ghost btn-sm"
-                      onClick={() => void copyId(u.id)}
-                    >
-                      Copy ID
-                    </button>
+                    <div className="row-actions">
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-sm"
+                        onClick={() => void copyId(u.id)}
+                      >
+                        Copy ID
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        disabled={openingId === u.id}
+                        onClick={() => void openManage(u)}
+                      >
+                        {openingId === u.id ? 'Opening…' : 'Manage'}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -209,6 +241,16 @@ export function PartnersPage() {
             Next
           </button>
         </div>
+      ) : null}
+
+      {selected ? (
+        <UserManageModal
+          user={selected}
+          partnerMode
+          onClose={() => setSelected(null)}
+          onUpdated={setSelected}
+          onListRefresh={async () => load(page, q)}
+        />
       ) : null}
     </div>
   );

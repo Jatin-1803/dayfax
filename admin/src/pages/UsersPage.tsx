@@ -2,9 +2,17 @@ import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { apiRequest, ApiError } from '../api/client';
 import type { AdminUser, PaginationMeta, RoleCode } from '../api/types';
+import { UserManageModal } from '../components/UserManageModal';
 import { useToast } from '../components/Toast';
 
 const ALL_ROLES: RoleCode[] = ['CUSTOMER', 'DELIVERY_PARTNER', 'ADMIN'];
+
+function statusBadgeClass(status: string): string {
+  if (status === 'ACTIVE') return 'badge';
+  if (status === 'SUSPENDED') return 'badge badge-warn';
+  if (status === 'BANNED' || status === 'BLOCKED') return 'badge badge-danger';
+  return 'badge badge-muted';
+}
 
 export function UsersPage() {
   const toast = useToast();
@@ -16,8 +24,7 @@ export function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<AdminUser | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [accountReason, setAccountReason] = useState('');
+  const [openingId, setOpeningId] = useState<string | null>(null);
 
   async function load(nextPage = page) {
     setLoading(true);
@@ -46,69 +53,6 @@ export function UsersPage() {
     void load(1);
   }, []);
 
-  async function grantRole(userId: string, nextRole: RoleCode) {
-    setBusy(true);
-    try {
-      await apiRequest(`/admin/users/${userId}/roles`, {
-        method: 'POST',
-        body: JSON.stringify({ role: nextRole }),
-      });
-      toast.push(`Granted ${nextRole}`, 'success');
-      await load(page);
-      if (selected?.id === userId) {
-        const detail = await apiRequest<AdminUser>(`/admin/users/${userId}`);
-        setSelected(detail);
-      }
-    } catch (err) {
-      toast.push(err instanceof ApiError ? err.message : 'Failed', 'error');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function accountAction(userId: string, action: string, statusLabel: string) {
-    const reason = accountReason.trim();
-    if (reason.length < 3) {
-      toast.push('Add a reason before changing the account', 'error');
-      return;
-    }
-    setBusy(true);
-    try {
-      await apiRequest(`/admin/users/${userId}/${action}`, {
-        method: 'POST',
-        body: JSON.stringify({ reason: reason.trim() }),
-      });
-      toast.push(statusLabel, 'success');
-      setAccountReason('');
-      await load(page);
-      setSelected(null);
-    } catch (err) {
-      toast.push(err instanceof ApiError ? err.message : 'Failed', 'error');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function revokeRole(userId: string, nextRole: RoleCode) {
-    if (!window.confirm(`Revoke ${nextRole}?`)) return;
-    setBusy(true);
-    try {
-      await apiRequest(`/admin/users/${userId}/roles/${nextRole}`, {
-        method: 'DELETE',
-      });
-      toast.push(`Revoked ${nextRole}`, 'success');
-      await load(page);
-      if (selected?.id === userId) {
-        const detail = await apiRequest<AdminUser>(`/admin/users/${userId}`);
-        setSelected(detail);
-      }
-    } catch (err) {
-      toast.push(err instanceof ApiError ? err.message : 'Failed', 'error');
-    } finally {
-      setBusy(false);
-    }
-  }
-
   function onSearch(e: FormEvent) {
     e.preventDefault();
     setPage(1);
@@ -121,6 +65,18 @@ export function UsersPage() {
       toast.push('ID copied', 'success');
     } catch {
       toast.push('Could not copy', 'error');
+    }
+  }
+
+  async function openManage(u: AdminUser) {
+    setOpeningId(u.id);
+    try {
+      const detail = await apiRequest<AdminUser>(`/admin/users/${u.id}`);
+      setSelected(detail);
+    } catch (err) {
+      toast.push(err instanceof ApiError ? err.message : 'Could not load user', 'error');
+    } finally {
+      setOpeningId(null);
     }
   }
 
@@ -177,13 +133,10 @@ export function UsersPage() {
                       <div className="muted">
                         {u.phoneCountryCode} {u.phone}
                       </div>
-                      <div className="muted" style={{ fontSize: '0.75rem' }}>
-                        {u.id}
-                      </div>
                     </td>
                     <td>{u.roles.join(', ') || '—'}</td>
                     <td>
-                      <span className="badge">{u.status}</span>
+                      <span className={statusBadgeClass(u.status)}>{u.status}</span>
                     </td>
                     <td>
                       <div className="row-actions">
@@ -197,9 +150,10 @@ export function UsersPage() {
                         <button
                           type="button"
                           className="btn btn-secondary btn-sm"
-                          onClick={() => setSelected(u)}
+                          disabled={openingId === u.id}
+                          onClick={() => void openManage(u)}
                         >
-                          Manage
+                          {openingId === u.id ? 'Opening…' : 'Manage'}
                         </button>
                       </div>
                     </td>
@@ -244,75 +198,12 @@ export function UsersPage() {
       ) : null}
 
       {selected ? (
-        <div className="modal-backdrop">
-          <div className="modal">
-            <h2>{selected.fullName || selected.phone}</h2>
-            <p className="muted">
-              {selected.phoneCountryCode} {selected.phone}
-              <br />
-              <code>{selected.id}</code>
-            </p>
-            <p>
-              Status: <span className="badge">{selected.status}</span>
-            </p>
-            <p>
-              Current roles:{' '}
-              {selected.roles.length ? selected.roles.join(', ') : 'none'}
-            </p>
-            <div className="field">
-              <label htmlFor="account-reason">Reason for account change</label>
-              <input
-                id="account-reason"
-                value={accountReason}
-                onChange={(event) => setAccountReason(event.target.value)}
-                placeholder="Required for suspend, ban, or logout"
-              />
-            </div>
-            <div className="row-actions">
-              <button type="button" className="btn btn-sm" disabled={busy} onClick={() => void accountAction(selected.id, 'activate', 'Activated')}>Activate</button>
-              <button type="button" className="btn btn-sm btn-secondary" disabled={busy} onClick={() => void accountAction(selected.id, 'deactivate', 'Deactivated')}>Deactivate</button>
-              <button type="button" className="btn btn-sm btn-secondary" disabled={busy} onClick={() => void accountAction(selected.id, 'suspend', 'Suspended')}>Suspend</button>
-              <button type="button" className="btn btn-sm btn-secondary" disabled={busy} onClick={() => void accountAction(selected.id, 'unsuspend', 'Unsuspended')}>Unsuspend</button>
-              <button type="button" className="btn btn-danger btn-sm" disabled={busy} onClick={() => void accountAction(selected.id, 'ban', 'Banned')}>Ban</button>
-              <button type="button" className="btn btn-sm" disabled={busy} onClick={() => void accountAction(selected.id, 'unban', 'Unbanned')}>Unban</button>
-              <button type="button" className="btn btn-sm btn-secondary" disabled={busy} onClick={() => void accountAction(selected.id, 'force-logout', 'Signed out')}>Force logout</button>
-            </div>
-            <div className="stack">
-              {ALL_ROLES.map((r) => {
-                const has = selected.roles.includes(r);
-                return (
-                  <div key={r} className="row-actions" style={{ alignItems: 'center' }}>
-                    <span style={{ minWidth: 160 }}>{r}</span>
-                    {has ? (
-                      <button
-                        type="button"
-                        className="btn btn-danger btn-sm"
-                        disabled={busy}
-                        onClick={() => void revokeRole(selected.id, r)}
-                      >
-                        Revoke
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        className="btn btn-sm"
-                        disabled={busy}
-                        onClick={() => void grantRole(selected.id, r)}
-                      >
-                        Grant
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-            <div className="modal-actions">
-              <button type="button" className="btn btn-secondary" onClick={() => setSelected(null)}>
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
+        <UserManageModal
+          user={selected}
+          onClose={() => setSelected(null)}
+          onUpdated={setSelected}
+          onListRefresh={async () => load(page)}
+        />
       ) : null}
     </div>
   );

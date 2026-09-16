@@ -6,6 +6,7 @@ import { AdminUsersController } from './admin-users.controller.js';
 import {
   adminGrantRoleSchema,
   adminListUsersSchema,
+  adminResetPasswordSchema,
   adminRevokeRoleParamsSchema,
   adminUserIdParamsSchema,
 } from './admin-users.schema.js';
@@ -51,8 +52,16 @@ adminUsersRouter.post('/:id/unsuspend', requirePermission('users.suspend'), vali
 adminUsersRouter.post('/:id/ban', requirePermission('users.ban'), validateRequest(idSchema, 'params'), validateRequest(reasonSchema), controller.ban);
 adminUsersRouter.post('/:id/unban', requirePermission('users.unban'), validateRequest(idSchema, 'params'), validateRequest(reasonSchema), controller.unban);
 adminUsersRouter.post('/:id/deactivate', requirePermission('users.deactivate'), validateRequest(idSchema, 'params'), validateRequest(reasonSchema), controller.deactivate);
+adminUsersRouter.post('/:id/delete', requirePermission('users.deactivate'), validateRequest(idSchema, 'params'), validateRequest(reasonSchema), controller.softDelete);
 adminUsersRouter.post('/:id/activate', requirePermission('users.edit'), validateRequest(idSchema, 'params'), validateRequest(reasonSchema), controller.activate);
 adminUsersRouter.post('/:id/restore', requirePermission('users.edit'), validateRequest(idSchema, 'params'), validateRequest(reasonSchema), controller.restore);
+adminUsersRouter.post(
+  '/:id/password',
+  requirePermission('users.edit'),
+  validateRequest(idSchema, 'params'),
+  validateRequest(adminResetPasswordSchema),
+  controller.resetPassword,
+);
 adminUsersRouter.post('/:id/force-logout', requirePermission('sessions.revoke'), validateRequest(idSchema, 'params'), validateRequest(reasonSchema), controller.forceLogout);
 adminUsersRouter.post(
   '/:id/sessions/:sessionId/revoke',

@@ -1,9 +1,19 @@
+import bcrypt from 'bcryptjs';
+import { writeAudit } from '../../common/audit/audit-log.js';
+import { revokeUserSessions } from '../../common/auth/session-store.js';
 import { NotFoundError, ValidationError } from '../../common/errors/app-error.js';
 import { paginatedMeta, parsePagination } from '../../common/utils/pagination.js';
 import type { RoleCode } from '../../common/middleware/auth.js';
 import { AuthRepository } from '../auth/auth.repository.js';
+import { AccountLifecycleService } from './account-lifecycle.service.js';
 import { AdminUsersRepository } from './admin-users.repository.js';
-import type { AdminGrantRoleInput, AdminListUsersQuery } from './admin-users.schema.js';
+import type {
+  AdminGrantRoleInput,
+  AdminListUsersQuery,
+  AdminResetPasswordInput,
+} from './admin-users.schema.js';
+
+const BCRYPT_COST = 12;
 
 function mapUser(
   row: Awaited<ReturnType<AdminUsersRepository['findById']>>,
@@ -27,6 +37,7 @@ export class AdminUsersService {
   constructor(
     private readonly repo = new AdminUsersRepository(),
     private readonly authRepo = new AuthRepository(),
+    private readonly lifecycle = new AccountLifecycleService(),
   ) {}
 
   async list(query: AdminListUsersQuery) {
@@ -59,6 +70,49 @@ export class AdminUsersService {
     }
     await this.authRepo.ensureRole(id, input.role);
     return this.getOne(id);
+  }
+
+  async softDelete(id: string, adminId: string, reason: string, requestId?: string) {
+    const row = await this.repo.findById(id);
+    if (!row) {
+      throw new NotFoundError('User not found');
+    }
+    const roles = await this.authRepo.getUserRoles(id);
+    if (roles.includes('ADMIN')) {
+      const adminCount = await this.repo.countAdmins();
+      if (adminCount <= 1) {
+        throw new ValidationError('Cannot delete the last ADMIN account');
+      }
+    }
+    return this.lifecycle.softDelete(id, adminId, reason, requestId);
+  }
+
+  async adminResetPassword(
+    id: string,
+    adminId: string,
+    input: AdminResetPasswordInput,
+    requestId?: string,
+    ipAddress?: string | null,
+  ) {
+    const row = await this.repo.findById(id);
+    if (!row) {
+      throw new NotFoundError('User not found');
+    }
+    const hash = await bcrypt.hash(input.password, BCRYPT_COST);
+    await this.authRepo.setPasswordHash(id, hash);
+    await revokeUserSessions({ userId: id, reason: 'admin_password_reset' });
+    await writeAudit({
+      actorType: 'admin',
+      actorId: adminId,
+      action: 'USER_PASSWORD_RESET_BY_ADMIN',
+      module: 'users',
+      entityType: 'user',
+      entityId: id,
+      reason: input.reason,
+      ipAddress,
+      requestId,
+    });
+    return { id, passwordUpdated: true };
   }
 
   async revokeRole(id: string, role: RoleCode) {
